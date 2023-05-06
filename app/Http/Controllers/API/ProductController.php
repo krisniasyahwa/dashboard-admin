@@ -71,4 +71,26 @@ class ProductController extends Controller
             );
         }
     }
+
+    public function favorites()
+    {
+        try {
+            $product = Product::with(['category', 'galleries'])->where('favorite', 1)->get();
+
+            if ($product->count() == 0) {
+                return ResponseFormatter::error(null, 'Data list produk favorite kosong', 404);
+            } else {
+                return ResponseFormatter::success(
+                    $product,
+                    'Data list produk favorite berhasil diambil'
+                );
+            }
+        } catch (\Throwable $th) {
+            return ResponseFormatter::error(
+                null,
+                'Data list produk favorite gagal diambil',
+                500
+            );
+        }
+    }
 }
