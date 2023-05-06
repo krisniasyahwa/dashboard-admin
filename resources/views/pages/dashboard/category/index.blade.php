@@ -15,12 +15,13 @@
                 columns: [
                     { data: 'id', name: 'id', width: '5%'},
                     { data: 'name', name: 'name' },
+                    { data: 'merchants.name', name: 'merchant' },
                     {
                         data: 'action',
                         name: 'action',
                         orderable: false,
                         searchable: false,
-                        width: '25%'
+                        width: '25%',
                     },
                 ],
             });
@@ -41,6 +42,7 @@
                         <tr>
                             <th>ID</th>
                             <th>Nama</th>
+                            <th>Merchant</th>
                             <th>Aksi</th>
                         </tr>
                         </thead>
