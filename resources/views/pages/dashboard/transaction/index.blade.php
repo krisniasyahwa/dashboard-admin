@@ -16,6 +16,7 @@
                     { data: 'id', name: 'id', width: '5%'},
                     { data: 'user.name', name: 'user.name' },
                     { data: 'total_price', name: 'total_price' },
+                    { data: 'payment', name: 'payment' },
                     { data: 'status', name: 'status' },
                     {
                         data: 'action',
@@ -39,6 +40,7 @@
                             <th>ID</th>
                             <th>Nama</th>
                             <th>Total Harga</th>
+                            <th>Pembayaran</th>
                             <th>Status</th>
                             <th>Aksi</th>
                         </tr>

@@ -96,7 +96,7 @@ class ProductController extends Controller
      */
     public function edit(Product $product)
     {
-        $categories = ProductCategory::all();
+        $categories = ProductCategory::with('merchants')->get();
         $merchants = Merchant::all();
 
         return view('pages.dashboard.product.edit', [
