@@ -77,9 +77,11 @@ class ProductController extends Controller
         $merchants = $request->input('merchants');
 
         try {
-            $product = Product::with(['category', 'galleries', 'featured_image'])->where('favorite', 1)->get();
-
-            if ($merchants) $product->where('merchants_id', $merchants);
+            if ($merchants) {
+                $product = Product::with(['category', 'galleries', 'featured_image'])->where('favorite', 1)->where('merchants_id', $merchants)->get();
+            } else {
+                $product = Product::with(['category', 'galleries', 'featured_image'])->where('favorite', 1)->get();
+            }
 
             if ($product->count() == 0) {
                 return ResponseFormatter::error(null, 'Data list produk favorite kosong', 404);
