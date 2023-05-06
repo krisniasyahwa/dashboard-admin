@@ -72,10 +72,14 @@ class ProductController extends Controller
         }
     }
 
-    public function favorites()
+    public function favorites(Request $request)
     {
+        $merchants = $request->input('merchants');
+
         try {
-            $product = Product::with(['category', 'galleries'])->where('favorite', 1)->get();
+            $product = Product::with(['category', 'galleries', 'featured_image'])->where('favorite', 1)->get();
+
+            if ($merchants) $product->where('merchants_id', $merchants);
 
             if ($product->count() == 0) {
                 return ResponseFormatter::error(null, 'Data list produk favorite kosong', 404);
