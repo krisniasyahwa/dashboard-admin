@@ -14,7 +14,7 @@ class AddMerchantToProductsTable extends Migration
     public function up()
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->string('merchant')->after('categories_id');
+            $table->integer('merchants_id')->after('categories_id');
         });
     }
 
@@ -26,7 +26,7 @@ class AddMerchantToProductsTable extends Migration
     public function down()
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->dropColumn(('merchant'));
+            $table->dropColumn(('merchants_id'));
         });
     }
 }

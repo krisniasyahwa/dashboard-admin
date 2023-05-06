@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\MerchantController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\API\UserController;
@@ -26,8 +27,17 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::get('transactions', [TransactionController::class, 'all']);
     Route::post('checkout', [TransactionController::class, 'checkout']);
+
+    Route::post('merchants', [MerchantController::class, 'store']);
+    Route::delete('merchants/{slug}', [MerchantController::class, 'destroy']);
 });
 
+
+Route::get('merchants', [MerchantController::class, 'index']);
+Route::get('merchants/{slug}', [MerchantController::class, 'show']);
+
+Route::get('merchants/{merchant}/categories', [MerchantController::class, 'categories']);
+Route::get('merchants/{merchant}/products', [MerchantController::class, 'products']);
 
 Route::get('products', [ProductController::class, 'all']);
 Route::get('categories', [ProductCategoryController::class, 'all']);

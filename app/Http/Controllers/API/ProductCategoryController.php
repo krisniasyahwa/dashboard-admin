@@ -15,12 +15,12 @@ class ProductCategoryController extends Controller
         $limit = $request->input('limit', 6);
         $name = $request->input('name');
         $show_product = $request->input('show_product');
+        $merchants = $request->input('merchants');
 
-        if($id)
-        {
+        if ($id) {
             $category = ProductCategory::with(['products'])->find($id);
 
-            if($category)
+            if ($category)
                 return ResponseFormatter::success(
                     $category,
                     'Data produk berhasil diambil'
@@ -35,15 +35,22 @@ class ProductCategoryController extends Controller
 
         $category = ProductCategory::query();
 
-        if($name)
+        if ($name)
             $category->where('name', 'like', '%' . $name . '%');
 
-        if($show_product)
+        if ($show_product)
             $category->with('products');
 
-        return ResponseFormatter::success(
-            $category->paginate($limit),
-            'Data list kategori produk berhasil diambil'
-        );
+        if ($merchants)
+            $category->where('merchants_id', $merchants);
+
+        if ($category->count() == 0) {
+            return ResponseFormatter::error(null, 'Data list kategori produk kosong', 404);
+        } else {
+            return ResponseFormatter::success(
+                $category->paginate($limit),
+                'Data list kategori produk berhasil diambil'
+            );
+        }
     }
 }
