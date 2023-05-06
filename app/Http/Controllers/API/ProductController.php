@@ -38,7 +38,7 @@ class ProductController extends Controller
                 );
         }
 
-        $product = Product::with(['category', 'galleries']);
+        $product = Product::with(['category', 'galleries', 'featured_image']);
 
         if ($name)
             $product->where('name', 'like', '%' . $name . '%');
@@ -68,6 +68,28 @@ class ProductController extends Controller
             return ResponseFormatter::success(
                 $product->paginate($limit),
                 'Data list produk berhasil diambil'
+            );
+        }
+    }
+
+    public function favorites()
+    {
+        try {
+            $product = Product::with(['category', 'galleries'])->where('favorite', 1)->get();
+
+            if ($product->count() == 0) {
+                return ResponseFormatter::error(null, 'Data list produk favorite kosong', 404);
+            } else {
+                return ResponseFormatter::success(
+                    $product,
+                    'Data list produk favorite berhasil diambil'
+                );
+            }
+        } catch (\Throwable $th) {
+            return ResponseFormatter::error(
+                null,
+                'Data list produk favorite gagal diambil',
+                500
             );
         }
     }

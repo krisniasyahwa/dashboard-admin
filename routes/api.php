@@ -40,6 +40,7 @@ Route::get('merchants/{merchant}/categories', [MerchantController::class, 'categ
 Route::get('merchants/{merchant}/products', [MerchantController::class, 'products']);
 
 Route::get('products', [ProductController::class, 'all']);
+Route::get('products/favorite', [ProductController::class, 'favorites']);
 Route::get('categories', [ProductCategoryController::class, 'all']);
 
 Route::post('login', [UserController::class, 'login']);
