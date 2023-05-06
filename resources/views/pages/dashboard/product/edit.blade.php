@@ -49,8 +49,10 @@
                                 MERCHANT
                             </label>
                             <select name="merchants_id" class="appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500" id="grid-last-name">
+                                <option value="{{ $item->merchants_id }}">{{ \App\Models\Merchant::find($item->merchants_id)->name }}</option>
+                                <option disabled>----</option>
                                 @foreach ($merchants as $merchant)
-                                    <option value="{{ $merchant->id }}" {{ $item->merchants_id == $merchant->id ? 'selected' : '' }}>{{ $merchant->name }}</option>
+                                    <option value="{{ $merchant->id }}">{{ $merchant->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -64,7 +66,7 @@
                                 <option value="{{ $item->categories_id }}">{{ \App\Models\ProductCategory::find($item->categories_id)->name }}</option>
                                 <option disabled>----</option>
                                 @foreach ($categories as $category)
-                                    <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                    <option value="{{ $category->id }}">{{ $category->name }} - {{ $category->merchants->name }}</option>
                                 @endforeach
                             </select>
                         </div>
