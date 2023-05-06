@@ -1,1 +1,1 @@
-<img src="/images/logo.svg" style="height: 30px;"/>
+<img src="/images/kolab.jpeg" style="height: 30px;"/>
