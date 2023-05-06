@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Support\Str;
 use App\Http\Requests\ProductCategoryRequest;
+use App\Models\Merchant;
 use App\Models\ProductCategory;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -17,9 +18,9 @@ class ProductCategoryController extends Controller
     public function index()
     {
         if (request()->ajax()) {
-            $query = ProductCategory::query();
+            $query = ProductCategory::with('merchants');
 
-            return DataTables::of($query)
+            $data = DataTables::of($query)
                 ->addColumn('action', function ($item) {
                     return '
                         <a class="inline-block border border-gray-700 bg-gray-700 text-white rounded-md px-2 py-1 m-1 transition duration-500 ease select-none hover:bg-gray-800 focus:outline-none focus:shadow-outline" 
@@ -38,6 +39,9 @@ class ProductCategoryController extends Controller
                 })
                 ->rawColumns(['action'])
                 ->make();
+
+            // dd($data);
+            return $data;
         }
 
         return view('pages.dashboard.category.index');
@@ -50,7 +54,8 @@ class ProductCategoryController extends Controller
      */
     public function create()
     {
-        return view('pages.dashboard.category.create');
+        $merchants = Merchant::all();
+        return view('pages.dashboard.category.create', compact('merchants'));
     }
 
     /**
@@ -87,8 +92,11 @@ class ProductCategoryController extends Controller
      */
     public function edit(ProductCategory $category)
     {
-        return view('pages.dashboard.category.edit',[
-            'item' => $category
+        $merchants = Merchant::all();
+
+        return view('pages.dashboard.category.edit', [
+            'item' => $category,
+            'merchants' => $merchants
         ]);
     }
 
