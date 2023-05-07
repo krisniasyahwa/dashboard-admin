@@ -73,10 +73,10 @@ class MerchantController extends Controller
      * @param slug
      * @return \Illuminate\Http\Response
      */
-    public function show($slug)
+    public function show($id)
     {
         // Show specific merchant by slug params
-        $merchant = Merchant::where('slug', $slug)->first();
+        $merchant = Merchant::find($id);
 
         // Error handling if merchant is not found
         if (!$merchant) {
@@ -104,10 +104,10 @@ class MerchantController extends Controller
      * @param  \App\Models\Merchant  $merchant
      * @return \Illuminate\Http\Response
      */
-    public function destroy($slug)
+    public function destroy($id)
     {
         // Delete merchant
-        $merchant = Merchant::where('slug', $slug)->first();
+        $merchant = Merchant::find($id);
 
         // Error handling if merchant is not found
         if (!$merchant) {
@@ -124,7 +124,7 @@ class MerchantController extends Controller
 
         try {
             // Show all categories by merchant
-            $categories = Merchant::where('slug', $merchant)->first()->product_categories();
+            $categories = Merchant::find($merchant)->product_categories();
 
             // Error handling if no categories found
             if ($categories->count() == 0) {
@@ -143,7 +143,7 @@ class MerchantController extends Controller
 
         try {
             // Show all products by merchant
-            $products = Merchant::where('slug', $merchant)->first()->products();
+            $products = Merchant::find($merchant)->first()->products();
 
             // Error handling if no products found
             if ($products->count() == 0) {

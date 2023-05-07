@@ -34,10 +34,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
 
 Route::get('merchants', [MerchantController::class, 'index']);
-Route::get('merchants/{slug}', [MerchantController::class, 'show']);
-
-Route::get('merchants/{merchant}/categories', [MerchantController::class, 'categories']);
-Route::get('merchants/{merchant}/products', [MerchantController::class, 'products']);
+Route::get('merchants/{id}', [MerchantController::class, 'show']);
+Route::get('merchants/{id}/categories', [MerchantController::class, 'categories']);
+Route::get('merchants/{id}/products', [MerchantController::class, 'products']);
 
 Route::get('products', [ProductController::class, 'all']);
 Route::get('products/favorite', [ProductController::class, 'favorites']);
