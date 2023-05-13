@@ -15,14 +15,15 @@
                 columns: [
                     { data: 'id', name: 'id', width: '5%'},
                     { data: 'name', name: 'name' },
-                    { data: 'category.name', name: 'category.name' },
                     { data: 'price', name: 'price' },
+                    { data: 'category.name', name: 'category.name' },
+                    { data: 'merchant.name', name: 'merchant.name' },
                     {
                         data: 'action',
                         name: 'action',
                         orderable: false,
                         searchable: false,
-                        width: '25%'
+                        width: '30%'
                     },
                 ],
             });
@@ -43,8 +44,9 @@
                         <tr>
                             <th>ID</th>
                             <th>Nama</th>
-                            <th>Kategori</th>
                             <th>Harga</th>
+                            <th>Kategori</th>
+                            <th>Merchant</th>
                             <th>Aksi</th>
                         </tr>
                         </thead>

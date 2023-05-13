@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use Illuminate\Support\Str;
 use App\Http\Requests\ProductRequest;
+use App\Models\Merchant;
 use App\Models\ProductCategory;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -18,7 +19,7 @@ class ProductController extends Controller
     public function index()
     {
         if (request()->ajax()) {
-            $query = Product::with('category');
+            $query = Product::with('category', 'merchant');
 
             return DataTables::of($query)
                 ->addColumn('action', function ($item) {
@@ -55,8 +56,10 @@ class ProductController extends Controller
      */
     public function create()
     {
+        $merchants = Merchant::all();
         $categories = ProductCategory::all();
-        return view('pages.dashboard.product.create', compact('categories'));
+
+        return view('pages.dashboard.product.create', compact('categories', 'merchants'));
     }
 
     /**
@@ -93,10 +96,13 @@ class ProductController extends Controller
      */
     public function edit(Product $product)
     {
-        $categories = ProductCategory::all();
-        return view('pages.dashboard.product.edit',[
+        $categories = ProductCategory::with('merchants')->get();
+        $merchants = Merchant::all();
+
+        return view('pages.dashboard.product.edit', [
             'item' => $product,
-            'categories' => $categories
+            'categories' => $categories,
+            'merchants' => $merchants
         ]);
     }
 

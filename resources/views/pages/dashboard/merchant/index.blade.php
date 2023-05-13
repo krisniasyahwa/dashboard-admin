@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Category') }}
+            {{ __('Merchant') }}
         </h2>
     </x-slot>
 
@@ -14,8 +14,12 @@
                 },
                 columns: [
                     { data: 'id', name: 'id', width: '5%'},
+                    { data: 'profile_photo_path', name: 'profile_photo_path', render: function (data) {
+                        return data != null ? '<img src="'+data+'" class="rounded-full w-20 h-20"/>' : null;
+                    }},
                     { data: 'name', name: 'name' },
-                    { data: 'merchants.name', name: 'merchant' },
+                    { data: 'address', name: 'address' },
+                    { data: 'phone', name: 'phone' },
                     {
                         data: 'action',
                         name: 'action',
@@ -31,8 +35,8 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="mb-10">
-                <a href="{{ route('dashboard.category.create') }}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded shadow-lg">
-                    + Create Category
+                <a href="{{ route('dashboard.merchant.create') }}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded shadow-lg">
+                    + Create Merchant
                 </a>
             </div>
             <div class="shadow overflow-hidden sm:rounded-md">
@@ -41,8 +45,10 @@
                         <thead>
                         <tr>
                             <th>ID</th>
+                            <th>Photo</th>
                             <th>Nama</th>
-                            <th>Merchant</th>
+                            <th>Address</th>
+                            <th>Phone</th>
                             <th>Aksi</th>
                         </tr>
                         </thead>

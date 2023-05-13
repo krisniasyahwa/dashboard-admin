@@ -43,6 +43,20 @@
                             <input value="{{ old('tags') ?? $item->tags }}" name="tags" class="appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500" id="grid-last-name" type="text" placeholder="Product Tags. Comma Separated. Example: popular">
                         </div>
                     </div>
+                    <div class="flex flex-wrap -mx-3 mb-6">
+                        <div class="w-full px-3">
+                            <label class="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2" for="grid-last-name">
+                                MERCHANT
+                            </label>
+                            <select name="merchants_id" class="appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500" id="grid-last-name">
+                                <option value="{{ $item->merchants_id }}">{{ \App\Models\Merchant::find($item->merchants_id)->name }}</option>
+                                <option disabled>----</option>
+                                @foreach ($merchants as $merchant)
+                                    <option value="{{ $merchant->id }}">{{ $merchant->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
                      <div class="flex flex-wrap -mx-3 mb-6">
                         <div class="w-full px-3">
                             <label class="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2" for="grid-last-name">
@@ -52,7 +66,7 @@
                                 <option value="{{ $item->categories_id }}">{{ \App\Models\ProductCategory::find($item->categories_id)->name }}</option>
                                 <option disabled>----</option>
                                 @foreach ($categories as $category)
-                                    <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                    <option value="{{ $category->id }}">{{ $category->name }} - {{ $category->merchants->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -74,6 +88,26 @@
                             <input value="{{ old('price') ?? $item->price }}" name="price" class="appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500" id="grid-last-name" type="number" placeholder="Product Price">
                         </div>
                     </div>
+
+                    <div class="flex flex-wrap -mx-3 mb-6">
+                        <div class="w-full px-3">
+                            <label class="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2" for="grid-last-name">
+                                FAVORITE
+                            </label>
+
+                            <div class="mt-2">
+                                <label class="inline-flex items-center">
+                                    <input type="radio" class="form-radio" name="favorite" value="1" {{ $item->favorite == 1 ? 'checked' : '' }}>
+                                    <span class="ml-2">Yes</span>
+                                </label>
+                                <label class="inline-flex items-center ml-6">
+                                    <input type="radio" class="form-radio" name="favorite" value="0" {{ $item->favorite == 0 ? 'checked' : '' }}>
+                                    <span class="ml-2">No</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="flex flex-wrap -mx-3 mb-6">
                         <div class="w-full px-3 text-right">
                             <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
