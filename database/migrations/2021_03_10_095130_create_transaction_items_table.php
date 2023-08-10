@@ -13,6 +13,7 @@ class CreateTransactionItemsTable extends Migration
      */
     public function up()
     {
+        //THis is snippet to create table transaction_items
         Schema::create('transaction_items', function (Blueprint $table) {
             $table->id();
             

@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateProductCategoriesTable extends Migration
+class CreateMerchantVouchersTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,13 +13,11 @@ class CreateProductCategoriesTable extends Migration
      */
     public function up()
     {
-        //THis is snippet to create table product_categories
-        Schema::create('product_categories', function (Blueprint $table) {
+        Schema::create('merchant_vounchers', function (Blueprint $table) {
             $table->id();
-
-            $table->string('name');
-
-            $table->softDeletes();
+            $table->integer('amount')->default(0)->nullable();
+            $table->foreignId('merchant_id');
+            $table->foreignId('group_id');
             $table->timestamps();
         });
     }
@@ -31,6 +29,6 @@ class CreateProductCategoriesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('product_categories');
+        Schema::dropIfExists('merchant_vounchers');
     }
 }

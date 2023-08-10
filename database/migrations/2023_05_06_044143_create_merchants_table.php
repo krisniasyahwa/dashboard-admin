@@ -13,6 +13,7 @@ class CreateMerchantsTable extends Migration
      */
     public function up()
     {
+        //THis is snippet to create merchants table
         Schema::create('merchants', function (Blueprint $table) {
             $table->id();
 

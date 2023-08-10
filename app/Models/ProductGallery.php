@@ -15,7 +15,7 @@ class ProductGallery extends Model
         'products_id', 'url', 'is_featured'
     ];
 
-    
+    //getUrlAttribute is a function to get the url of the image from the database, and convert it to a full url with the help of config('app.url) and Storage::url($url)
     public function getUrlAttribute($url)
     {
         return config('app.url') . Storage::url($url);
