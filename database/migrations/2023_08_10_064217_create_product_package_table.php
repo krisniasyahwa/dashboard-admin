@@ -19,7 +19,7 @@ class CreateProductPackageTable extends Migration
             $table->text('description')->nullable();
             $table->tinyInteger('status')->default(0);
             $table->double('price')->default(0)->nullable();
-            $table->boolean('best_sellers')->default(false)->nullable();
+            $table->boolean('best_seller')->default(false)->nullable();
             $table->foreignId('merchant_id');
             $table->softDeletes();
             $table->timestamps();
