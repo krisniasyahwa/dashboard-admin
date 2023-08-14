@@ -43,4 +43,8 @@ class Product extends Model
     {
         return $this->belongsTo(Merchant::class, 'merchants_id', 'id');
     }
+
+    // // public function promo(){
+    // //     return $this->(Promo::class, '');
+    // }
 }

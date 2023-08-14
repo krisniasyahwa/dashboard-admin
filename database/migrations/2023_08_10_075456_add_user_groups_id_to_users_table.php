@@ -14,7 +14,7 @@ class AddUserGroupsIdToUsersTable extends Migration
     public function up()
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->foreignId('user_groups_id')->after('merchant_id')->nullable();
+            $table->foreignId('current_team_id')->after('merchant_id')->nullable();
         });
     }
 

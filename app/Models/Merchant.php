@@ -31,4 +31,9 @@ class Merchant extends Model
 
         return config('app.url') . Storage::url($path);
     }
+
+    public function MerchantVoucher(){
+        return $this->hasMany(MerchantsVoucher::class, 'merchants_id', 'id');
+    }
+
 }

@@ -68,4 +68,13 @@ class User extends Authenticatable
     {
         return $this->hasMany(Transaction::class, 'users_id', 'id');
     }
+
+    //Create Relationship with users_group table
+    public function userGroup(){
+        return $this->belongsTo(UserGroup::class, 'current_team_id', 'id');
+    }
+
+    public function role(){
+        return $this->belongsTo(Role::class, 'role', 'id');
+    }
 }
