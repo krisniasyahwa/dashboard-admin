@@ -9,6 +9,10 @@ class UserGroup extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'expired_date', 'users_id', 'groups_id'
+    ];
+
     public function user(){
         return $this->hasMany(User::class, 'users_id', 'id');
     }

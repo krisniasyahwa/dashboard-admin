@@ -30,6 +30,10 @@ class User extends Authenticatable
         //'phone_number',
         'roles',
         'password',
+        'user_group_id',
+        'current_team_id',
+        'point',
+        'role_id'
     ];
 
     /**
