@@ -7,6 +7,7 @@ use App\Models\Merchant;
 use Illuminate\Http\Request;
 use App\Helpers\ResponseFormatter;
 use App\Http\Controllers\Controller;
+use Exception;
 use Facade\FlareClient\Http\Response;
 
 class ProductController extends Controller
@@ -86,28 +87,33 @@ class ProductController extends Controller
     }
 
 
-    // public function bestSeller(Request $request){
-    //     $merchants = $request->input('merchants');
+    // public function featureImage(Request $request){
+    //     $limit = $request->input('limit', 5);
 
     //     try{
-    //         if ($merchants) {
-    //             $product = Product::with(['category', 'galleries', 'featured_image'])->where('best_seller', 1)->where('merchants_id', $merchants)->get();
-    //         }else {
-    //             $product = Product::with(['category', 'galleries', 'featured_image'])->where('best_seller', 1)->get();
-    //         }
-    //         if ($product->count() == 0) {
-    //             return ResponseFormatter::error(null, 'Data list produk best seller kosong', 404);
-    //         } else {
+    //         $featureImage = Product::with(['featured_image'])->limit($limit)->get();
+    //         if($featureImage){
+
     //             return ResponseFormatter::success(
-    //                 $product,
-    //                 'Data list produk best seller berhasil diambil'
+    //                 $featureImage,
+    //                 'Data produk dengan featured image berhasil diambil'
+    //             );
+    //         }else{
+    //             return ResponseFormatter::error(
+    //                 null,
+    //                 'Data produk dengan featured image tidak ada',
+    //                 404
     //             );
     //         }
-    //     } catch (\Throwable $th){
-    //         return ResponseFormatter::error(null, 'Data list produk best seller gagal diambil', 500);
+
+    //     } catch(Exception $error){
+    //         return ResponseFormatter::error([
+    //             'message' => 'Something went wrong',
+    //             'error' => $error,
+    //         ], 'Authentication Failed', 500);
+
     //     }
-
-
+        
     // }
 
     //Functioin to get product best seller
@@ -121,8 +127,12 @@ class ProductController extends Controller
             }else{
                 return ResponseFormatter::error(null, 'Data list produk best seller kosong', 404);
             }
-        } catch (\Throwable $th){
-            return ResponseFormatter::error(null, 'Data list produk best seller gagal diambil', 500);
+        } catch(Exception $error){
+            return ResponseFormatter::error([
+                'message' => 'Something went wrong',
+                'error' => $error,
+            ], 'Authentication Failed', 500);
+
         }
         
 
@@ -135,28 +145,37 @@ class ProductController extends Controller
         $categories = $request->input('categories');
         $merchants = $request->input('merchants');
 
-        if ($merchants) {
-            $randomProduct = Product::with(['category', 'featured_image', 'galleries', 'promo', 'merchant'])->inRandomOrder()->where('merchants_id', $merchants)->take($limit)->get();
+        try{
+            if ($merchants) {
+                $randomProduct = Product::with(['category', 'featured_image', 'galleries', 'promo', 'merchant'])->inRandomOrder()->where('merchants_id', $merchants)->take($limit)->get();
+    
+                if ($randomProduct->count() != 0) {
+                    return ResponseFormatter::success($randomProduct, "Data list produk random berhasil diambil");
+                } else {
+                    return ResponseFormatter::error(null, 'Data list produk random kosong', 404);
+                }
+            }
+            if ($categories) {
+                $randomProduct = Product::with(['category', 'featured_image', 'galleries', 'promo', 'merchant'])->inRandomOrder()->where('categories_id', $categories)->take($limit)->get();
+                if ($randomProduct->count() != 0) {
+                    return ResponseFormatter::success($randomProduct, "Data list produk random berhasil diambil");
+                } else {
+                    return ResponseFormatter::error(null, 'Data list produk random kosong', 404);
+                }
+            } else {
+                $randomProduct = Product::with(['category', 'featured_image', 'galleries', 'promo', 'merchant'])->inRandomOrder()->take($limit)->get();
+                return ResponseFormatter::success(
+                    $randomProduct,
+                    'Data list produk random berhasil diambil'
+                );
+            }
 
-            if ($randomProduct->count() != 0) {
-                return ResponseFormatter::success($randomProduct, "Data list produk random berhasil diambil");
-            } else {
-                return ResponseFormatter::error(null, 'Data list produk random kosong', 404);
-            }
-        }
-        if ($categories) {
-            $randomProduct = Product::with(['category', 'featured_image', 'galleries', 'promo', 'merchant'])->inRandomOrder()->where('categories_id', $categories)->take($limit)->get();
-            if ($randomProduct->count() != 0) {
-                return ResponseFormatter::success($randomProduct, "Data list produk random berhasil diambil");
-            } else {
-                return ResponseFormatter::error(null, 'Data list produk random kosong', 404);
-            }
-        } else {
-            $randomProduct = Product::with(['category', 'featured_image', 'galleries', 'promo', 'merchant'])->inRandomOrder()->take($limit)->get();
-            return ResponseFormatter::success(
-                $randomProduct,
-                'Data list produk random berhasil diambil'
-            );
+        }catch(Exception $error){
+            return ResponseFormatter::error([
+                'message' => 'Something went wrong',
+                'error' => $error,
+            ], 'Authentication Failed', 500);
+
         }
     }
 }
