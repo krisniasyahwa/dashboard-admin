@@ -39,7 +39,8 @@ Route::get('merchants/{id}/categories', [MerchantController::class, 'categories'
 Route::get('merchants/{id}/products', [MerchantController::class, 'products']);
 
 Route::get('products', [ProductController::class, 'all']);
-Route::get('products/favorite', [ProductController::class, 'favorites']);
+Route::get('products/bestseller', [ProductController::class, 'bestSeller']);
+Route::get('products/randomproducts', [ProductController::class, 'randomProducts']);
 Route::get('categories', [ProductCategoryController::class, 'all']);
 
 Route::post('login', [UserController::class, 'login']); //Route login with UserController use POST method, and use login url

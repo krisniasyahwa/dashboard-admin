@@ -17,3 +17,4 @@ class UserGroup extends Model
         return $this->belongsTo(Group::class, 'groups_id', 'id');
     }
 }
+

@@ -11,7 +11,7 @@ class Product extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'name', 'description', 'price', 'categories_id', 'tags', 'favorite', 'merchants_id'
+        'name', 'description', 'price', 'categories_id', 'tags', 'favorite', 'merchants_id', 'best_seller'
     ];
     //Create relationship with ProductGallery table->one to many->products_id as foregin key
     public function galleries()
@@ -44,6 +44,10 @@ class Product extends Model
         return $this->belongsTo(Merchant::class, 'merchants_id', 'id');
     }
 
+    public function promo()
+    {
+        return $this->hasMany(Promo::class, 'products_id', 'id');
+    }
     // // public function promo(){
     // //     return $this->(Promo::class, '');
     // }

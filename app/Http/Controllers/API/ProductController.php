@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\API;
 
 use App\Models\Product;
+use App\Models\Merchant;
 use Illuminate\Http\Request;
 use App\Helpers\ResponseFormatter;
 use App\Http\Controllers\Controller;
+use Facade\FlareClient\Http\Response;
 
 class ProductController extends Controller
 {
@@ -18,9 +20,10 @@ class ProductController extends Controller
         $tags = $request->input('tags');
         $categories = $request->input('categories');
         $merchants = $request->input('merchants');
-
         $price_from = $request->input('price_from');
         $price_to = $request->input('price_to');
+        $promo = $request->input('promo');
+        $favorite = $request->input('favorite');
 
         if ($id) {
             //Join product table, category table and galleries table with id request
@@ -42,7 +45,7 @@ class ProductController extends Controller
         }
 
         //Join product table, category table, galleries table
-        $product = Product::with(['category', 'galleries', 'featured_image']);
+        $product = Product::with(['category', 'galleries', 'featured_image', 'promo']);
 
         //if name request is not null, use where like to search product name
         if ($name)
@@ -65,6 +68,8 @@ class ProductController extends Controller
         //if merchants request is not null, use where like to search product merchants
         if ($merchants)
             $product->where('merchants_id', $merchants);
+        // if ($promo)
+        //     $product->where('promo_id', $promo);
 
         //if count product is o, return error response, with message "Data list produk kosong", and status code 404
         if ($product->count() == 0) {
@@ -80,30 +85,77 @@ class ProductController extends Controller
         }
     }
 
-    public function favorites(Request $request)
+
+    // public function bestSeller(Request $request){
+    //     $merchants = $request->input('merchants');
+
+    //     try{
+    //         if ($merchants) {
+    //             $product = Product::with(['category', 'galleries', 'featured_image'])->where('best_seller', 1)->where('merchants_id', $merchants)->get();
+    //         }else {
+    //             $product = Product::with(['category', 'galleries', 'featured_image'])->where('best_seller', 1)->get();
+    //         }
+    //         if ($product->count() == 0) {
+    //             return ResponseFormatter::error(null, 'Data list produk best seller kosong', 404);
+    //         } else {
+    //             return ResponseFormatter::success(
+    //                 $product,
+    //                 'Data list produk best seller berhasil diambil'
+    //             );
+    //         }
+    //     } catch (\Throwable $th){
+    //         return ResponseFormatter::error(null, 'Data list produk best seller gagal diambil', 500);
+    //     }
+
+
+    // }
+
+    //Functioin to get product best seller
+    public function bestSeller(Request $request)
     {
+        try{
+            $limit = $request->input('limit', 12);
+            $bestSeller = Product::with(['category', 'featured_image', 'galleries', 'promo', 'merchant'])->where('best_seller', 1)->take($limit)->get();
+            if($bestSeller->count()!=0){
+                return ResponseFormatter::success($bestSeller, 'Data list produk best seller berhasil diambil');
+            }else{
+                return ResponseFormatter::error(null, 'Data list produk best seller kosong', 404);
+            }
+        } catch (\Throwable $th){
+            return ResponseFormatter::error(null, 'Data list produk best seller gagal diambil', 500);
+        }
+        
+
+    }
+
+    //Function to get random produt with limit ()
+    public function randomProducts(Request $request)
+    {
+        $limit = $request->input('limit', 8);
+        $categories = $request->input('categories');
         $merchants = $request->input('merchants');
 
-        try {
-            if ($merchants) {
-                $product = Product::with(['category', 'galleries', 'featured_image'])->where('favorite', 1)->where('merchants_id', $merchants)->get();
-            } else {
-                $product = Product::with(['category', 'galleries', 'featured_image'])->where('favorite', 1)->get();
-            }
+        if ($merchants) {
+            $randomProduct = Product::with(['category', 'featured_image', 'galleries', 'promo', 'merchant'])->inRandomOrder()->where('merchants_id', $merchants)->take($limit)->get();
 
-            if ($product->count() == 0) {
-                return ResponseFormatter::error(null, 'Data list produk favorite kosong', 404);
+            if ($randomProduct->count() != 0) {
+                return ResponseFormatter::success($randomProduct, "Data list produk random berhasil diambil");
             } else {
-                return ResponseFormatter::success(
-                    $product,
-                    'Data list produk favorite berhasil diambil'
-                );
+                return ResponseFormatter::error(null, 'Data list produk random kosong', 404);
             }
-        } catch (\Throwable $th) {
-            return ResponseFormatter::error(
-                null,
-                'Data list produk favorite gagal diambil',
-                500
+        }
+        if ($categories) {
+            $randomProduct = Product::with(['category', 'featured_image', 'galleries', 'promo', 'merchant'])->inRandomOrder()->where('categories_id', $categories)->take($limit)->get();
+            if ($randomProduct->count() != 0) {
+                return ResponseFormatter::success($randomProduct, "Data list produk random berhasil diambil");
+            } else {
+                return ResponseFormatter::error(null, 'Data list produk random kosong', 404);
+            }
+        } else {
+            $randomProduct = Product::with(['category', 'featured_image', 'galleries', 'promo', 'merchant'])->inRandomOrder()->take($limit)->get();
+            return ResponseFormatter::success(
+                $randomProduct,
+                'Data list produk random berhasil diambil'
             );
         }
     }

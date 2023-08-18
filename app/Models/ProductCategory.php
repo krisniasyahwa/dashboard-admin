@@ -12,7 +12,7 @@ class ProductCategory extends Model
 
     // 
     protected $fillable = [
-        'name', 'merchants_id'
+        'name', 'merchants_id', 'image'
     ];
     //Create relationship with Products table->one to many->categories_id as foreign key
     public function products()

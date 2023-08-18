@@ -17,6 +17,7 @@ class ProductCategoryController extends Controller
         $name = $request->input('name'); //variable name will store request name 
         $show_product = $request->input('show_product'); //variable show_product will store request show_product
         $merchants = $request->input('merchants'); //variable merchants will store request merchants
+        $image = $request->input('image');
         //if id request is not null, use find method to search use id request
         if ($id) {
             $category = ProductCategory::with(['products'])->find($id); //variable category will store result join product table and category table with id request
@@ -45,6 +46,9 @@ class ProductCategoryController extends Controller
         //if merchants request is not null, return category with merchants request use where
         if ($merchants)
             $category->where('merchants_id', $merchants);
+        //if image request is not null, return category with image request use where
+        if($image)
+            $category->where('image',$image);
         //return category with paginate method and limit request
         if ($category->count() == 0) {
             return ResponseFormatter::error(null, 'Data list kategori produk kosong', 404); //return error response use ResponseFormatter with message "Data list kategori produk kosong", and status code 404

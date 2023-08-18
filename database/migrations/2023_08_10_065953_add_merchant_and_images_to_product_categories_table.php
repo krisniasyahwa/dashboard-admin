@@ -14,8 +14,7 @@ class AddMerchantAndImagesToProductCategoriesTable extends Migration
     public function up()
     {
         Schema::table('product_categories', function (Blueprint $table) {
-            $table->foreignId('merchant_id')->nullable();
-            $table->string('image')->nullable();
+            $table->string('image')->nullable()->after('name');
         });
     }
 

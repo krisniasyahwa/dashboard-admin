@@ -14,7 +14,7 @@ class AddBestSellerToProductsTable extends Migration
     public function up()
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->boolean('best_seller')->default(false)->nullable();
+            $table->boolean('best_seller')->default(false);
         });
     }
 
