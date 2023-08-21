@@ -13,6 +13,7 @@ class AddFavoriteToProductsTable extends Migration
      */
     public function up()
     {
+        //THis is snippet to add column favorite to products table
         Schema::table('products', function (Blueprint $table) {
             $table->boolean(('favorite'))->default(false)->after('tags');
         });

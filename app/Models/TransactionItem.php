@@ -10,7 +10,7 @@ class TransactionItem extends Model
     use HasFactory;
 
     protected $fillable = [
-        'users_id', 'products_id', 'transactions_id', 'quantity'
+        'users_id', 'products_id', 'transactions_id', 'quantity', 'note'
     ]; 
 
     public function product()

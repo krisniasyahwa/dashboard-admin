@@ -27,8 +27,13 @@ class User extends Authenticatable
         'name',
         'email',
         'username',
+        //'phone_number',
         'roles',
         'password',
+        'user_group_id',
+        'current_team_id',
+        'point',
+        'role_id'
     ];
 
     /**
@@ -61,8 +66,19 @@ class User extends Authenticatable
         'profile_photo_url',
     ];
 
+
+    //Create relationship with Transaction Table
     public function transactions()
     {
         return $this->hasMany(Transaction::class, 'users_id', 'id');
+    }
+
+    //Create Relationship with users_group table
+    public function userGroup(){
+        return $this->belongsTo(UserGroup::class, 'current_team_id', 'id');
+    }
+
+    public function role(){
+        return $this->belongsTo(Role::class, 'role', 'id');
     }
 }

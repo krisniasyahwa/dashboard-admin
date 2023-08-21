@@ -13,6 +13,7 @@ class AddMerchantProductToCategoriesTable extends Migration
      */
     public function up()
     {
+        //THis is snippet to add column merchants_id to product_categories table
         Schema::table('product_categories', function (Blueprint $table) {
             $table->integer('merchants_id')->after('name');
         });

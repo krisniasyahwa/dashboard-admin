@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class AddMerchantToProductsTable extends Migration
+class AddPoinToTransactionsTableTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,9 +13,8 @@ class AddMerchantToProductsTable extends Migration
      */
     public function up()
     {
-        //THis is snippet to add column merchants_id to products table
-        Schema::table('products', function (Blueprint $table) {
-            $table->integer('merchants_id')->after('categories_id');
+        Schema::table('transactions', function (Blueprint $table) {
+            $table->integer('point_usage')->default(0)->nullable();
         });
     }
 
@@ -26,8 +25,8 @@ class AddMerchantToProductsTable extends Migration
      */
     public function down()
     {
-        Schema::table('products', function (Blueprint $table) {
-            $table->dropColumn(('merchants_id'));
+        Schema::table('transactions', function (Blueprint $table) {
+            //
         });
     }
 }

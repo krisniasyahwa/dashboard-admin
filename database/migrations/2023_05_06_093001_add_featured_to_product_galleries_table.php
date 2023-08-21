@@ -13,6 +13,7 @@ class AddFeaturedToProductGalleriesTable extends Migration
      */
     public function up()
     {
+        //THis is snippet to add column is_featured to product_galleries table
         Schema::table('product_galleries', function (Blueprint $table) {
             $table->boolean(('is_featured'))->default(false)->after('url');
         });
