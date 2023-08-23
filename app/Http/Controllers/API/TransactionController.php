@@ -8,6 +8,7 @@ use App\Models\Transaction;
 use App\Models\TransactionItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class TransactionController extends Controller
 {
@@ -23,6 +24,7 @@ class TransactionController extends Controller
         $id = $request->input('id');
         $limit = $request->input('limit', 6);
         $status = $request->input('status');
+        $merchants = $request->input('merchants');
 
         try {
             //Filtering data transaction by id
@@ -31,12 +33,12 @@ class TransactionController extends Controller
                 if ($transaction)
                     return ResponseFormatter::success(
                         $transaction,
-                        'Data transaksi dengan id transaksi '.$id.' berhasil diambil'
+                        'Data transaksi dengan id transaksi ' . $id . ' berhasil diambil'
                     );
                 else
                     return ResponseFormatter::error(
                         null,
-                        'Data transaksi dengan id transaksi '.$id.' tidak ditemukan',
+                        'Data transaksi dengan id transaksi ' . $id . ' tidak ditemukan',
                         404.
                     );
             }
@@ -46,15 +48,31 @@ class TransactionController extends Controller
                 if ($transaction)
                     return ResponseFormatter::success(
                         $transaction,
-                        'Data transaksi dengan status transaksi '.$status.' berhasil diambil'
+                        'Data transaksi dengan status transaksi ' . $status . ' berhasil diambil'
                     );
                 else
                     return ResponseFormatter::error(
                         null,
-                        'Data transaksi dengan status transaksi '.$status.' tidak ditemukan',
+                        'Data transaksi dengan status transaksi ' . $status . ' tidak ditemukan',
                         404.
                     );
             }
+
+            if ($merchants) {
+                $transaction = Transaction::with(['items.product.merchant'])->where('users_id', $user)->where('items.product.merchant.merchants_id', $merchants);
+                if ($transaction)
+                    return ResponseFormatter::success(
+                        $transaction,
+                        'Transaksi dengan id transaksi ' . $user . ' untuk merchant ' . $merchants . ' berhasil diambil'
+                    );
+                else
+                    return ResponseFormatter::error(
+                        null,
+                        'Transaksi untuk merchant' . $merchants . 'tidak ditemukan',
+                        404.
+                    );
+            }
+
 
             //Get all data transaction by user loged
             $transaction = Transaction::with(['items.product'])->where('users_id', $user);
@@ -78,37 +96,138 @@ class TransactionController extends Controller
      * @return \Illuminate\Http\JsonResponse
      */
 
-    //This function is used to send data transaction to database use request
+
     public function checkout(Request $request)
     {
-        //$request use validate function to validate data request use formata array
-        $request->validate([
-            'items' => 'required|array', //items request is required and data type must be array
-            'items.*.id' => 'exists:products,id', //items.*.id means all id in items request must be exists in products table where use id product 
-            'total_price' => 'required', //total_price request is required
-            'shipping_price' => 'required', //shipping_price request is required, thats means total_price and shipping_price request must be exists
-            'payment' => 'required|in:QRIS,MANUAL', //payment request is required. Use in function to validate payment exists is QRIS or MANUAL
-            'status' => 'required|in:PENDING,SUCCESS,CANCELLED,FAILED,SHIPPING,SHIPPED', //status request is required. This params use in function to validate status exists is PENDING, SUCCESS, CANCELLED, FAILED, SHIPPING, SHIPPED
+
+        $user = Auth::user()->id;
+
+        $validatedData = $request->validate([
+            'total_price' => "required",
+            'shipping_price' => "required",
+            'payment' => "required|in:QRIS,CASH",
+            'status' => "required|in:PENDING,SUCCESS,CANCELLED,FAILED,ONPROSSES",
+            'point_usage' => "required|min:0",
+            'address' => "nullable",
+            'items' => "required|array",
+            'items.*.id' => "required|exists:products,id",
+            'items.*.quantity' => "required|min:1",
+            'items.*.note' => "nullable",
         ]);
-        //After all data request is validated, data will be create use create function. Output result use array format 
+
         $transaction = Transaction::create([
-            'users_id' => Auth::user()->id, //users_id get id from user loged use Auth::user()
-            'address' => $request->address, //address get data from request address
-            'payment' => $request->payment, // payment will grab data from request payment 
-            'total_price' => $request->total_price, //total_price wiil grab data from request total_price
-            'shipping_price' => $request->shipping_price, //shipping_price will grab data from request shipping_price
-            'status' => $request->status //status will grab data from request status
+            'users_id' => $user,
+            'total_price' => $validatedData['total_price'],
+            'shipping_price' => $validatedData['shipping_price'],
+            'payment' => $validatedData['payment'],
+            'status' => $validatedData['status'],
+            'point_usage' => $validatedData['point_usage'],
+            'address' => $validatedData['address'],
         ]);
-        //This function is used to looping all array data request items and store to database use create function
-        foreach ($request->items as $product) {
-            TransactionItem::create([ //Call TransactionItem Model included create function to create data to database
-                'users_id' => Auth::user()->id, //users_id grab id from user loged use Auth::user()
-                'products_id' => $product['id'], //products_id grab id from request items array include product id
-                'transactions_id' => $transaction->id, //transactions_id grab id from $transaction
-                'quantity' => $product['quantity'] //quantity grab data from request items array include quantity product
+
+        foreach ($validatedData['items'] as $item) {
+            TransactionItem::create([
+                'users_id' => $user,
+                'products_id' => $item['id'],
+                'transactions_id' => $transaction['id'],
+                'quantity' => $item['quantity'],
             ]);
         }
-        //If all data request is validated and all data request is stored to database, return success response, and return $transaction data, and message
+
         return ResponseFormatter::success($transaction->load('items.product'), 'Transaksi berhasil');
     }
+
+    // public function confirmation(Request $request){
+    //     $user = Auth::user()->id;
+    //     $transaction_id = $request->input('transaction_id');
+    //     $transaction = Transaction::where('users_id', $user)->where('transactions_id', $transaction_id );
+
+
+    //     $validatedData = $request->validate([
+    //         'status' => 'required|in:PENDING',
+    //         'payment' => 'required|in:QRIS',
+    //     ]);
+
+
+
+    //     //Update Status Transaction
+    //     $update = Transaction::where('id', $transaction_id)->update( [
+    //         'status' => "ONPROSSES",
+    //         'payment' => $validatedData['payment'],
+    //     ]);
+
+    //     return ResponseFormatter::success($update, 'Update Konfirmasi Berhasil');
+
+    //     // if($request->hasFile('image')){
+    //     //     //upload image
+    //     //     $image = $validatedData['upload_image'];
+    //     //     $image->storeAs('public/transaction', $image->hasName());
+    //     //     //Delete old image
+    //     //     Storage::delete('public/transaction/', $transaction->image);
+    //     //     //Update image
+    //     //     $transaction = Transaction::update([
+    //     //         'image' => $image->hasName(),
+    //     //         'status' => "ONPORSSES",
+    //     //         'payment' => $validatedData['payment'],
+    //     //     ]);
+
+    //     //     return ResponseFormatter::success($transaction, 'Update Konfirmasi Berhasil');
+
+    //     // }else{
+    //     //     return ResponseFormatter::error(null, 'Update Konfirmasi Gagal', 500);
+
+    //     // }
+    // }
+
+    public function confirmation(Request $request)
+    {
+        $user = Auth::user()->id;
+        $transaction_id = $request->input('id');
+        $image = $request->file('image');
+
+        $validatedData = $request->validate([
+            'status' => 'required|in:PENDING',
+            'payment' => 'required|in:QRIS',
+        ]);
+        $transaction = Transaction::where('users_id', $user)->where('id', $transaction_id)->first();
+
+        if ($request->hasFile('image')) {
+            $imagePath = $image->store('Public/transactions');
+            //$transaction->image = $imagePath;
+            if ($transaction->image) {
+                Storage::delete('Public/transactions');
+                $transaction->image = $imagePath;
+                return ResponseFormatter::success($transaction, 'Update Konfirmasi Berhasil');
+            } else {
+                $transaction->image = $imagePath;
+                return ResponseFormatter::success($transaction, 'Update Konfirmasi Berhasil');
+            }
+            //Update transaction 
+            // $transaction->status = $validatedData['status'];
+            // $transaction->payment = $validatedData['payment'];
+            // $transaction->save();
+        }
+
+
+    }
+
+    // public function merchants(Request $request){
+    //     $user = Auth::user()->id;
+    //     $limit = $request->input('limit', 6);
+    //     $merchants = $request->input('merchants');
+
+
+    //     try{
+    //         if($merchants){
+    //             $transaction = Transaction::with('items.product.merchant')->where('users_id', $user)->where('items.product.merchant.merchant_id', $merchants);
+    //             return ResponseFormatter::success($transaction, 'Transaksi id transaksi'.$user.'untuk merchant'.$merchants.'berhasil diambil');
+
+    //         }else{
+    //             return ResponseFormatter::error(null, 'Transaksi untuk merchant'.$merchants.'tidak ditemukan', 404);
+    //         }
+
+    //     }catch(\Throwable $th){
+    //         return ResponseFormatter::error($th, 'Something Happen', 500);
+    //     }
+    // }
 }
