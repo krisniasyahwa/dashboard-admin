@@ -11,49 +11,74 @@ use Illuminate\Support\Facades\Auth;
 
 class TransactionController extends Controller
 {
-    //This function is used to get all transactioin data from databaase use request
-    public function all(Request $request)
-    {
-        $id = $request->input('id'); //If request is id, id request will store in $id
-        $limit = $request->input('limit', 6); //if request is limit, limit request will store in $limit, if limit request is null, $limit will store 6
-        $status = $request->input('status'); //If request is status, status request will store in $status
-
-        //This function is used to get personal transaction data from database use request id
-        if ($id) {
-            //Join transaction table, with product table
-            $transaction = Transaction::with(['items.product'])->find($id); //Find transaction data with id request
-
-            if ($transaction) //If transaction data from id request is found, return success response, and return $transaction data, and message
-                return ResponseFormatter::success(
-                    $transaction, 
-                    'Data transaksi berhasil diambil'
-                );
-            else
-                //If transaction data from id request not found, return error response, and return null, and message
-                return ResponseFormatter::error(
-                    null,
-                    'Data transaksi tidak ada',
-                    404
-                );
-        }
-        //$transaction will store all transaction data from database use join product table use Auth::user() that means use id from user loged
-        $transaction = Transaction::with(['items.product'])->where('users_id', Auth::user()->id);
-        //This function is used to get transaction data from database use request status
-        if ($status)
-            $transaction->where('status', $status); //If request is status, $transaction will store transaction data with status request
-
-        return ResponseFormatter::success(
-            $transaction->paginate($limit), //Return success response, and return $transaction data with paginate method and limit request, and message
-            'Data list transaksi berhasil diambil'
-        );
-    }
 
     /**
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
 
-     //This function is used to send data transaction to database use request
+    public function index(Request $request)
+    {
+        $user = Auth::user()->id;
+        $id = $request->input('id');
+        $limit = $request->input('limit', 6);
+        $status = $request->input('status');
+
+        try {
+            //Filtering data transaction by id
+            if ($id) {
+                $transaction = Transaction::with(['items.product'])->where('users_id', $user)->find($id);
+                if ($transaction)
+                    return ResponseFormatter::success(
+                        $transaction,
+                        'Data transaksi dengan id transaksi '.$id.' berhasil diambil'
+                    );
+                else
+                    return ResponseFormatter::error(
+                        null,
+                        'Data transaksi dengan id transaksi '.$id.' tidak ditemukan',
+                        404.
+                    );
+            }
+            //filtering data transaction by status
+            if ($status) {
+                $transaction = Transaction::with(['items.product'])->where('users_id', $user)->where('status', $status);
+                if ($transaction)
+                    return ResponseFormatter::success(
+                        $transaction,
+                        'Data transaksi dengan status transaksi '.$status.' berhasil diambil'
+                    );
+                else
+                    return ResponseFormatter::error(
+                        null,
+                        'Data transaksi dengan status transaksi '.$status.' tidak ditemukan',
+                        404.
+                    );
+            }
+
+            //Get all data transaction by user loged
+            $transaction = Transaction::with(['items.product'])->where('users_id', $user);
+            if ($transaction->count() == 0) {
+                return ResponseFormatter::error(
+                    null,
+                    'Data transaksi tidak ditemukan',
+                    404
+                );
+            } else {
+                return ResponseFormatter::success($transaction->paginate($limit), 'Data list transaksi berhasil diambil');
+            }
+        } catch (\Throwable $th) {
+            return ResponseFormatter::error($th, 'Something Happen', 500);
+        }
+    }
+
+
+    /**
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+
+    //This function is used to send data transaction to database use request
     public function checkout(Request $request)
     {
         //$request use validate function to validate data request use formata array
@@ -84,6 +109,6 @@ class TransactionController extends Controller
             ]);
         }
         //If all data request is validated and all data request is stored to database, return success response, and return $transaction data, and message
-        return ResponseFormatter::success($transaction->load('items.product'), 'Transaksi berhasil'); 
+        return ResponseFormatter::success($transaction->load('items.product'), 'Transaksi berhasil');
     }
 }

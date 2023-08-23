@@ -20,13 +20,13 @@ use App\Http\Controllers\API\ProductCategoryController;
 */
 
 //Auth:sanctum is a middleware to check if user is login or not 
-Route::middleware(['auth:sanctum'])->group(function () { //use middleware auth:sanctum
-    Route::get('user', [UserController::class, 'fetch']); //Route user to get data user use UserController witch fetch method
-    Route::post('user', [UserController::class, 'updateProfile']); //Route to update user profile use UserController with updateProfile method
-    Route::post('logout', [UserController::class, 'logout']); //Route logout use UserController with logout method
+Route::middleware(['auth:sanctum'])->group(function () { 
+    Route::get('user', [UserController::class, 'fetch']); 
+    Route::post('user', [UserController::class, 'updateProfile']); 
+    Route::post('logout', [UserController::class, 'logout']); 
 
-    Route::get('transactions', [TransactionController::class, 'all']); //Route to get all transaction use TransactionController with all method
-    Route::post('checkout', [TransactionController::class, 'checkout']); //Route to send checkout data use TransactionController with checkout method
+    Route::get('transactions', [TransactionController::class, 'index']); 
+    Route::post('checkout', [TransactionController::class, 'checkout']); 
 
     Route::post('merchants', [MerchantController::class, 'store']);
     Route::delete('merchants/{slug}', [MerchantController::class, 'destroy']);
@@ -44,5 +44,5 @@ Route::get('products/randomproducts', [ProductController::class, 'randomProducts
 Route::get('products/featureImage', [ProductController::class, 'featureImage']);
 Route::get('categories', [ProductCategoryController::class, 'all']);
 
-Route::post('login', [UserController::class, 'login']); //Route login with UserController use POST method, and use login url
+Route::post('login', [UserController::class, 'login']); 
 Route::post('register', [UserController::class, 'register']);
