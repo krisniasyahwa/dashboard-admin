@@ -228,147 +228,31 @@ class TransactionController extends Controller
         }
     }
 
-    // public function date(Request $request)
-    // {
-    //     $user = Auth::user()->id;
-    //     $type = $request->input('type');
-    //     $transaction = Transaction::query()->where('users_id', $user);
+    public function payment(Request $request)
+    {
+        $user = Auth::user()->id;
+        $limit = $request->input('input|6');
+        $payment = $request->input('payment');
 
-    //     if ($type === 'today') {
-    //         $transaction->whereDate('created_at', '=', date('Y-m-d'));
-    //     } elseif ($type === 'yesterday') {
-    //         $yesterday = date('Y-m-d', strtotime('-1 day'));
-    //         $transaction->whereDate('created_at', '=', $yesterday);
-    //     } elseif ($type === 'month') {
-    //         $firstDayOfMonth = date('Y-m-01');
-    //         $lastDayOfMonth = date('Y-m-t');
-    //         $transaction->whereBetween('created_at', [$firstDayOfMonth, $lastDayOfMonth]);
-    //     }
-
-    //     $filteredTransactions = $transaction->get();
-
-    //     return ResponseFormatter::success($filteredTransactions, 'success');
-    // }
-
-
-    // public function date(Request $request)
-    // {
-    //     $user = Auth::user()->id;
-    //     $type = $request->input('type');
-    //     $transaction = Transaction::query()->where('users_id', $user);
-
-    //     if ($type === 'today') {
-    //         $transaction->whereDate('created_at', Carbon::today());
-    //     } elseif ($type === 'yesterday') {
-    //         $transaction->whereDate('created_at', Carbon::yesterday());
-    //     } elseif ($type === 'month') {
-    //         $transaction->whereBetween('created_at', [
-    //             Carbon::now()->subMonth()->startOfMonth(),
-    //             Carbon::now()->subMonth()->endOfMonth()
-    //         ]);
-    //     }
-
-    //     $filteredTransactions = $transaction->get();
-
-    //     return ResponseFormatter::success($filteredTransactions, 'success');
-    // }
-
-    // public function date(Request $request){
-    //     $user = Auth::user()->id;
-    //     $type = $request->input('type');
-    //     $transaction = Transaction::query()->where('users_id',$user);
-
-    //     if($type === 'today'){
-    //         $transaction->today();
-    //         // return ResponseFormatter::success($transaction, 'FilterDate Success');
-    //     }
-    //     if($type === 'yesterday'){
-    //         $transaction->yesterday();
-    //         // return ResponseFormatter::success($transaction, 'FilterDate Success');
-    //     }
-    //     if($type === 'month'){
-    //         $transaction->month();
-    //         // return ResponseFormatter::success($transaction, 'FilterDate Success');
-    //     }
-
-    //     $filterdTransactions = $transaction->get();
-    //     return ResponseFormatter::success($filterdTransactions, 'success');
-
-    //     // try{
-    //     //     $transaction = Transaction::wiht(['items.product'])->today()->where('users_id', $user->id);
-    //     //     return ResponseFormatter::success($transaction, 'FilterDate Success');
-
-    //     // }catch (Exception $error){
-    //     //     return ResponseFormatter::error([
-    //     //         'message' => 'Something Happen',
-    //     //         'error' => $error
-    //     //     ], 'Authenticated Failed', 500);
-
-    //     // }
-
-    // }
-
-    // public function confirmation(Request $request){
-    //     $user = Auth::user()->id;
-    //     $transaction_id = $request->input('transaction_id');
-    //     $transaction = Transaction::where('users_id', $user)->where('transactions_id', $transaction_id );
-
-
-    //     $validatedData = $request->validate([
-    //         'status' => 'required|in:PENDING',
-    //         'payment' => 'required|in:QRIS',
-    //     ]);
-
-
-
-    //     //Update Status Transaction
-    //     $update = Transaction::where('id', $transaction_id)->update( [
-    //         'status' => "ONPROSSES",
-    //         'payment' => $validatedData['payment'],
-    //     ]);
-
-    //     return ResponseFormatter::success($update, 'Update Konfirmasi Berhasil');
-
-    //     // if($request->hasFile('image')){
-    //     //     //upload image
-    //     //     $image = $validatedData['upload_image'];
-    //     //     $image->storeAs('public/transaction', $image->hasName());
-    //     //     //Delete old image
-    //     //     Storage::delete('public/transaction/', $transaction->image);
-    //     //     //Update image
-    //     //     $transaction = Transaction::update([
-    //     //         'image' => $image->hasName(),
-    //     //         'status' => "ONPORSSES",
-    //     //         'payment' => $validatedData['payment'],
-    //     //     ]);
-
-    //     //     return ResponseFormatter::success($transaction, 'Update Konfirmasi Berhasil');
-
-    //     // }else{
-    //     //     return ResponseFormatter::error(null, 'Update Konfirmasi Gagal', 500);
-
-    //     // }
-    // }
-
-
-
-    // public function merchants(Request $request){
-    //     $user = Auth::user()->id;
-    //     $limit = $request->input('limit', 6);
-    //     $merchants = $request->input('merchants');
-
-
-    //     try{
-    //         if($merchants){
-    //             $transaction = Transaction::with('items.product.merchant')->where('users_id', $user)->where('items.product.merchant.merchant_id', $merchants);
-    //             return ResponseFormatter::success($transaction, 'Transaksi id transaksi'.$user.'untuk merchant'.$merchants.'berhasil diambil');
-
-    //         }else{
-    //             return ResponseFormatter::error(null, 'Transaksi untuk merchant'.$merchants.'tidak ditemukan', 404);
-    //         }
-
-    //     }catch(\Throwable $th){
-    //         return ResponseFormatter::error($th, 'Something Happen', 500);
-    //     }
-    // }
+        try{
+            if($payment === 'QRIS'){
+                $transaction = Transaction::with('items.product')->where('users_id',$user)->where('payment',$payment)->get();
+                return ResponseFormatter::success($transaction, 'Berhasil mengambil transaksi dengan metode pembayaran '.$payment);
+            }
+            if($payment === 'CASH'){
+                $transaction = Transaction::with('items.product')->where('users_id',$user)->where('payment',$payment)->get();
+                return ResponseFormatter::success($transaction, 'Berhasil mengambil transaksi dengan metode pembayaran '.$payment);
+            }else{
+                return ResponseFormatter::error(null, "Data transaksi tidak ditemukan", 400);
+            }
+        }catch(Exception $error){
+            return ResponseFormatter::error([
+                'message' => 'something went wrong',
+                'error' => $error
+            ], 'Authenticated Fail', 500);
+        }
+            
+            
+        
+    }
 }
