@@ -6,13 +6,16 @@ use App\Helpers\ResponseFormatter;
 use App\Http\Controllers\Controller;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
+use App\Traits\FilterByDate;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Carbon;
 
 class TransactionController extends Controller
 {
-
+    use FilterByDate;
     /**
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
@@ -137,6 +140,174 @@ class TransactionController extends Controller
         return ResponseFormatter::success($transaction->load('items.product'), 'Transaksi berhasil');
     }
 
+    public function confirmation(Request $request)
+    {
+        $user = Auth::user()->id;
+        $transaction_id = $request->input('id');
+        $image = $request->file('image');
+
+        $validatedData = $request->validate([
+            'status' => 'required|in:PENDING',
+            'payment' => 'required|in:QRIS',
+        ]);
+        $transaction = Transaction::where('users_id', $user)->where('id', $transaction_id)->first();
+
+        if ($request->hasFile('image')) {
+            $imagePath = $image->store('Public/transactions');
+            //$transaction->image = $imagePath;
+            if ($transaction->image) {
+                Storage::delete('Public/transactions');
+                $transaction->image = $imagePath;
+                return ResponseFormatter::success($transaction, 'Update Konfirmasi Berhasil');
+            } else {
+                $transaction->image = $imagePath;
+                return ResponseFormatter::success($transaction, 'Update Konfirmasi Berhasil');
+            }
+            //Update transaction 
+            // $transaction->status = $validatedData['status'];
+            // $transaction->payment = $validatedData['payment'];
+            // $transaction->save();
+        }
+    }
+
+    public function date(Request $request)
+    {
+        $user = Auth::user()->id;
+        $limit = $request->input('limit|6');
+        $type = $request->input('type');
+        if ($type === 'today') {
+            $transaction = Transaction::with(['items.product'])->whereDate('created_at', Carbon::today())->where('users_id',$user)->get();
+            if($transaction->count()!=0){
+                return ResponseFormatter::success($transaction, 'Riwayat Transaksi untuk '.$type." berhasil diambil");
+            }else{
+                return ResponseFormatter::error('null', 'Data transaksi tidak ditemukan');
+            }
+        }
+        if($type === 'yesterday'){
+            $transaction = Transaction::with(['items.product'])->whereDate('created_at', Carbon::yesterday())->where('users_id', $user)->get();
+            if($transaction->count()!=0){
+                return ResponseFormatter::success($transaction, 'Riwayat Transaksi untuk '.$type." berhasil diambil");
+            }else{
+                return ResponseFormatter::error('null', 'Data transaksi tidak ditemukan');
+            }
+        }
+        if($type === 'lastmonth'){
+            $transaction = Transaction::with(['items.product'])->whereDate('created_at', Carbon::today()->subDays(30))->where('users_id', $user)->get();
+            if($transaction->count()!=0){
+                return ResponseFormatter::success($transaction, 'Riwayat Transaksi untuk '.$type." berhasil diambil");
+            }else{
+                return ResponseFormatter::error('null', 'Data transaksi tidak ditemukan');
+            }
+        }
+        if($type === 'lastyear'){
+            $filter = Carbon::now()->subYear();
+            $transaction = Transaction::with(['items.product'])->whereDate('created_at', $filter)->where('users_id', $user)->get();
+            if($transaction->count()!=0){
+                return ResponseFormatter::success($transaction, 'Riwayat Transaksi untuk '.$type." berhasil diambil");
+            }else{
+                return ResponseFormatter::error('null', 'Data transaksi tidak ditemukan');
+            }
+        }
+        if($type === 'lastweek'){
+            $filter = Carbon::now()->subDays(7);
+            $transaction = Transaction::with(['items.product'])->whereDate('created_at', $filter)->where('users_id', $user)->get();
+            if($transaction->count()!=0){
+                return ResponseFormatter::success($transaction, 'Riwayat Transaksi untuk '.$type." berhasil diambil");
+            }else{
+                return ResponseFormatter::error('null', 'Data transaksi tidak ditemukan');
+            }
+        }
+        if($type === 'last3Days'){
+            $filter = Carbon::now()->subDays(3);
+            $transaction = Transaction::with(['items.product'])->whereDate('created_at', $filter)->where('users_id', $user)->get();
+            if($transaction->count()!=0){
+                return ResponseFormatter::success($transaction, 'Riwayat Transaksi untuk '.$type." berhasil diambil");
+            }else{
+                return ResponseFormatter::error('null', 'Data transaksi tidak ditemukan');
+            }
+        }
+    }
+
+    // public function date(Request $request)
+    // {
+    //     $user = Auth::user()->id;
+    //     $type = $request->input('type');
+    //     $transaction = Transaction::query()->where('users_id', $user);
+
+    //     if ($type === 'today') {
+    //         $transaction->whereDate('created_at', '=', date('Y-m-d'));
+    //     } elseif ($type === 'yesterday') {
+    //         $yesterday = date('Y-m-d', strtotime('-1 day'));
+    //         $transaction->whereDate('created_at', '=', $yesterday);
+    //     } elseif ($type === 'month') {
+    //         $firstDayOfMonth = date('Y-m-01');
+    //         $lastDayOfMonth = date('Y-m-t');
+    //         $transaction->whereBetween('created_at', [$firstDayOfMonth, $lastDayOfMonth]);
+    //     }
+
+    //     $filteredTransactions = $transaction->get();
+
+    //     return ResponseFormatter::success($filteredTransactions, 'success');
+    // }
+
+
+    // public function date(Request $request)
+    // {
+    //     $user = Auth::user()->id;
+    //     $type = $request->input('type');
+    //     $transaction = Transaction::query()->where('users_id', $user);
+
+    //     if ($type === 'today') {
+    //         $transaction->whereDate('created_at', Carbon::today());
+    //     } elseif ($type === 'yesterday') {
+    //         $transaction->whereDate('created_at', Carbon::yesterday());
+    //     } elseif ($type === 'month') {
+    //         $transaction->whereBetween('created_at', [
+    //             Carbon::now()->subMonth()->startOfMonth(),
+    //             Carbon::now()->subMonth()->endOfMonth()
+    //         ]);
+    //     }
+
+    //     $filteredTransactions = $transaction->get();
+
+    //     return ResponseFormatter::success($filteredTransactions, 'success');
+    // }
+
+    // public function date(Request $request){
+    //     $user = Auth::user()->id;
+    //     $type = $request->input('type');
+    //     $transaction = Transaction::query()->where('users_id',$user);
+
+    //     if($type === 'today'){
+    //         $transaction->today();
+    //         // return ResponseFormatter::success($transaction, 'FilterDate Success');
+    //     }
+    //     if($type === 'yesterday'){
+    //         $transaction->yesterday();
+    //         // return ResponseFormatter::success($transaction, 'FilterDate Success');
+    //     }
+    //     if($type === 'month'){
+    //         $transaction->month();
+    //         // return ResponseFormatter::success($transaction, 'FilterDate Success');
+    //     }
+
+    //     $filterdTransactions = $transaction->get();
+    //     return ResponseFormatter::success($filterdTransactions, 'success');
+
+    //     // try{
+    //     //     $transaction = Transaction::wiht(['items.product'])->today()->where('users_id', $user->id);
+    //     //     return ResponseFormatter::success($transaction, 'FilterDate Success');
+
+    //     // }catch (Exception $error){
+    //     //     return ResponseFormatter::error([
+    //     //         'message' => 'Something Happen',
+    //     //         'error' => $error
+    //     //     ], 'Authenticated Failed', 500);
+
+    //     // }
+
+    // }
+
     // public function confirmation(Request $request){
     //     $user = Auth::user()->id;
     //     $transaction_id = $request->input('transaction_id');
@@ -179,37 +350,7 @@ class TransactionController extends Controller
     //     // }
     // }
 
-    public function confirmation(Request $request)
-    {
-        $user = Auth::user()->id;
-        $transaction_id = $request->input('id');
-        $image = $request->file('image');
 
-        $validatedData = $request->validate([
-            'status' => 'required|in:PENDING',
-            'payment' => 'required|in:QRIS',
-        ]);
-        $transaction = Transaction::where('users_id', $user)->where('id', $transaction_id)->first();
-
-        if ($request->hasFile('image')) {
-            $imagePath = $image->store('Public/transactions');
-            //$transaction->image = $imagePath;
-            if ($transaction->image) {
-                Storage::delete('Public/transactions');
-                $transaction->image = $imagePath;
-                return ResponseFormatter::success($transaction, 'Update Konfirmasi Berhasil');
-            } else {
-                $transaction->image = $imagePath;
-                return ResponseFormatter::success($transaction, 'Update Konfirmasi Berhasil');
-            }
-            //Update transaction 
-            // $transaction->status = $validatedData['status'];
-            // $transaction->payment = $validatedData['payment'];
-            // $transaction->save();
-        }
-
-
-    }
 
     // public function merchants(Request $request){
     //     $user = Auth::user()->id;

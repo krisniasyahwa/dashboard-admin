@@ -27,7 +27,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::get('transactions', [TransactionController::class, 'index']);
     Route::get('transactions/merchants', [TransactionController::class, 'merchants']);
-    Route::post('transactions/confirmation', [TransactionController::class, 'confirmation']); 
+    Route::get('transactions/date', [TransactionController::class, 'date']);
+    Route::post('transactions/confirmation', [TransactionController::class, 'confirmation']);
     Route::post('checkout', [TransactionController::class, 'checkout']);
     Route::post('checkout/validation', [TransactionController::class, 'checkoutValidation']); 
 
