@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Models\User;
+use App\Models\Product;
 use App\Traits\FilterByDate;
 use Exception;
 use Illuminate\Http\Request;
@@ -144,38 +145,48 @@ class TransactionController extends Controller
     public function validatecart($items)
     {
         //Get the first merchant_id from first item
-            $merchants_id = $items[0]['product']['merchants_id'];
+        $merchants_id = $items[0]['product']['merchants_id'];
 
-            //Loop to check if all item have same merchant_id
-            foreach ($items as $item) {
-    
-                if ($item['product']['merchants_id'] !== $merchants_id) {
-                    return false; //If item have different merchant_id return false
-                }
+        //Loop to check if all item have same merchant_id
+        foreach ($items as $item) {
+
+            if ($item['product']['merchants_id'] !== $merchants_id) {
+                return false; //If item have different merchant_id return false
             }
+        }
 
         return true; //If all item have same merchant_id return true
     }
 
-    public function validationusergroups($user){
-        $groupRegistered = ['admin', 'startup', 'dosen'];
+
+
+    public function validationusergroups($user)
+    {
+
         $user = User::with('usergroup.group')->where('id', $user)->get();
-        $userGroup = $user[0]['usergroup']['group']['group_name'];
-        if ($userGroup === $groupRegistered[0]) {
-            return 'anda berhak mendapatkan point';
+
+        $userGroup = collect($user)->pluck('current_team_id');
+        if ($userGroup !== 0) {
+            return true;
+        } else {
+            return false;
         }
-        // if($userGroup === 'admin'){
-        //     return 'anda berhak mendapatkan point';
-        // }
-        // if($userGroup === 'startup'){
-        //     return 'anda berhak mendapatkan point';
-        // }if($userGroup === 'dosen'){
-        //     return 'anda berhak mendapatkan point';
-        // }else{
-        //     return 'anda tidak berhak mendapatkan point';
-        // }
-        
+
         return $userGroup;
+    }
+
+    public function validationpromoprice($items)
+    {
+        // $productRequest = $items;
+        // foreach ($productRequest as $product) {
+        //     $productId[] = $product['products_id'];
+        //     $product = Product::where('promo_price', '>', 0)->whereIn('id', $productId)->get();
+        // };
+        // return $product;
+
+        $productRequest = collect($items)->pluck('products_id')->toArray();
+        $product = Product::where('promo_price', '>', 0)->whereIn('id', $productRequest)->get();
+        return $product;
     }
 
     public function checkout(Request $request)
@@ -195,17 +206,38 @@ class TransactionController extends Controller
         ]);
 
         $items = $validatedDataTransaction['items'];
-        if (!$this->validatecart($items)) { 
+
+        if (!$this->validatecart($items)) {
             return response()->json([
                 'message' => 'Checkout failed',
                 'data' => 'Item from different merchant'
             ]);
+        } else {
+            $UserGroup = $this->validationusergroups($user);
+            if ($UserGroup) {
+                $promoproduct = $this->validationpromoprice($items);
+                return response()->json([
+                    'message' => 'Checkout successful',
+                    'data' => $promoproduct,
+                ]);
+            }elseif(!$UserGroup){
+                return response()->json([
+                    'message' => 'Checkout successful',
+                    'data' => $UserGroup,
+                ]);
+            }
+
+
+
+
+            
         }
 
-        $validatedUserGroup = $this->validationusergroups($user);
 
-       
-        
+
+
+
+
         // $transaction = Transaction::create([
         //     'users_id' => $user,
         //     'address' => $validatedDataTransaction['address'],
@@ -227,10 +259,7 @@ class TransactionController extends Controller
         // }
 
         //return ResponseFormatter::success($transaction->load('items.product'), 'Transaksi berhasil');
-        return response()->json([
-            'message' => 'Checkout successful',
-            'data' => $validatedUserGroup,
-        ]);
+
     }
 
     public function confirmation(Request $request)
