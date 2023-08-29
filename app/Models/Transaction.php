@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 class Transaction extends Model
 {
@@ -22,5 +23,20 @@ class Transaction extends Model
     public function items()
     {
         return $this->hasMany(TransactionItem::class, 'transactions_id', 'id');
+    }
+
+    public function scopeToday($query){
+        return $query->whereDate('created_at', Carbon::today());
+    }
+
+    public function scopeYesterday($query){
+        return $query->whereDate('created_at', Carbon::yesterday());
+    }
+
+    public function scopeLastMonth($query){
+        return $query->whereBetween('created_at', [
+            Carbon::now()->subMonth()->startOfMonth(),
+            Carbon::now()->subMonth()->endOfMonth()
+        ]);
     }
 }

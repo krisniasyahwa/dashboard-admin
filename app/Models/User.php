@@ -74,7 +74,7 @@ class User extends Authenticatable
     }
 
     //Create Relationship with users_group table
-    public function userGroup(){
+    public function usergroup(){
         return $this->belongsTo(UserGroup::class, 'current_team_id', 'id');
     }
 
