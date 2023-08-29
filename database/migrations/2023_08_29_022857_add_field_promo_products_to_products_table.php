@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class RenamePromoTable extends Migration
+class AddFieldPromoProductsToProductsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,8 +13,10 @@ class RenamePromoTable extends Migration
      */
     public function up()
     {
-        schema::rename('promo', 'promos');
-        //
+        Schema::table('products', function (Blueprint $table) {
+            $table->float('promo_price')->after('price')->default(0);
+            //
+        });
     }
 
     /**
@@ -24,6 +26,8 @@ class RenamePromoTable extends Migration
      */
     public function down()
     {
-        //
+        Schema::table('products', function (Blueprint $table) {
+            //
+        });
     }
 }
