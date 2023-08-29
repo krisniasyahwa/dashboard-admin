@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Models\User;
+use App\Models\Group;
+use App\Models\Product;
 use App\Traits\FilterByDate;
 use Exception;
 use Illuminate\Http\Request;
@@ -144,39 +146,52 @@ class TransactionController extends Controller
     public function validatecart($items)
     {
         //Get the first merchant_id from first item
-            $merchants_id = $items[0]['product']['merchants_id'];
+        $merchants_id = $items[0]['product']['merchants_id'];
 
-            //Loop to check if all item have same merchant_id
-            foreach ($items as $item) {
-    
-                if ($item['product']['merchants_id'] !== $merchants_id) {
-                    return false; //If item have different merchant_id return false
-                }
+        //Loop to check if all item have same merchant_id
+        foreach ($items as $item) {
+
+            if ($item['product']['merchants_id'] !== $merchants_id) {
+                return false; //If item have different merchant_id return false
             }
+        }
 
         return true; //If all item have same merchant_id return true
     }
 
-    public function validationusergroups($user){
-        $groupRegistered = ['admin', 'startup', 'dosen'];
+    public function validationusergroups($user)
+    {
+        $groupRegistered = Group::pluck('group_name');
         $user = User::with('usergroup.group')->where('id', $user)->get();
         $userGroup = $user[0]['usergroup']['group']['group_name'];
-        if ($userGroup === $groupRegistered[0]) {
-            return 'anda berhak mendapatkan point';
+        foreach ($groupRegistered as $group) {
+            if ($group === $userGroup) {
+                return $userGroup;
+            }
         }
-        // if($userGroup === 'admin'){
-        //     return 'anda berhak mendapatkan point';
-        // }
-        // if($userGroup === 'startup'){
-        //     return 'anda berhak mendapatkan point';
-        // }if($userGroup === 'dosen'){
-        //     return 'anda berhak mendapatkan point';
-        // }else{
-        //     return 'anda tidak berhak mendapatkan point';
-        // }
-        
-        return $userGroup;
+
+
+        return false;
     }
+
+    public function potentialpoint($user, $items, $validatedDataTransaction)
+    {
+        // $group = User::with('usergroup.group')->where('id',$user)->get();
+        //$group = $user;
+        if ($user === 'admin') {
+            $totalprice = $validatedDataTransaction['total_price'];
+            $rules = 20;
+            $potentialpoint = $totalprice / $rules;
+            return $potentialpoint;
+        } elseif ($user === 'member') {
+            return "Potential Point 20%";
+        } elseif ($user === 'dosen') {
+            return "Potential Point 50%";
+        }
+        return false;
+    }
+
+
 
     public function checkout(Request $request)
     {
@@ -195,42 +210,49 @@ class TransactionController extends Controller
         ]);
 
         $items = $validatedDataTransaction['items'];
-        if (!$this->validatecart($items)) { 
+        if (!$this->validatecart($items)) {
             return response()->json([
                 'message' => 'Checkout failed',
                 'data' => 'Item from different merchant'
             ]);
+        } else {
+            $group = $this->validationusergroups($user);
+            if ($group) {
+                $point = $this->potentialpoint($group, $items, $validatedDataTransaction);
+                $transaction = Transaction::create([
+                    'users_id' => $user,
+                    'address' => $validatedDataTransaction['address'],
+                    'total_price' => $validatedDataTransaction['total_price'],
+                    'status' => $validatedDataTransaction['status'],
+                    'payment' => $validatedDataTransaction['payment'],
+                    'point_usage' => $point,
+
+                ]);
+                //Update point
+                $updatedUser = User::find($user);
+                $updatedUser->point = $point;
+                $updatedUser->save();
+
+                foreach ($items as $item) {
+                    TransactionItem::create([
+                        'users_id' => $user,
+                        'products_id' => $item['id'],
+                        'transactions_id' => $transaction['id'],
+                        'quantity' => $item['quantity'],
+                        'note' =>  $item['note'],
+                    ]);
+                }
+
+
+
+                return ResponseFormatter::success($transaction->load('items.product'), 'Transaksi berhasil');
+            } else {
+                return response()->json([
+                    'message' => 'Checkout successful',
+                    'data' => 'not registered usergroup',
+                ]);
+            }
         }
-
-        $validatedUserGroup = $this->validationusergroups($user);
-
-       
-        
-        // $transaction = Transaction::create([
-        //     'users_id' => $user,
-        //     'address' => $validatedDataTransaction['address'],
-        //     'total_price' => $validatedDataTransaction['total_price'],
-        //     'status' => $validatedDataTransaction['status'],
-        //     'payment' => $validatedDataTransaction['payment'],
-        //     'point_usage' => $validatedDataTransaction['point_usage'],
-
-        // ]);
-
-        // foreach ($items as $item){
-        //     TransactionItem::create([
-        //         'users_id' => $user,
-        //         'products_id' => $item['id'],
-        //         'transactions_id' => $transaction['id'],
-        //         'quantity' => $item['quantity'],
-        //         'note' =>  $item['note'],
-        //     ]);
-        // }
-
-        //return ResponseFormatter::success($transaction->load('items.product'), 'Transaksi berhasil');
-        return response()->json([
-            'message' => 'Checkout successful',
-            'data' => $validatedUserGroup,
-        ]);
     }
 
     public function confirmation(Request $request)
