@@ -106,12 +106,12 @@ class TransactionController extends Controller
     public function validatecart($items)
     {
         //Get the first merchant_id from first item
-        $merchants_id = $items[0]['product']['merchants_id'];
-
-        //Loop to check if all item have same merchant_id
+        
+        $merchant_id = $items[0]['product']['merchants_id'];
+        // //Loop to check if all item have same merchant_id
         foreach ($items as $item) {
 
-            if ($item['product']['merchants_id'] !== $merchants_id) {
+            if ($item['product']['merchants_id'] !== $merchant_id) {
                 return false; //If item have different merchant_id return false
             }
         }
@@ -164,99 +164,99 @@ class TransactionController extends Controller
 
 
 
-    public function checkout(Request $request)
-    {
-        $user = Auth::user()->id;
+    // public function checkout(Request $request)
+    // {
+    //     $user = Auth::user()->id;
 
-        $validatedDataTransaction = $request->validate([
-            'address' => "nullable",
-            'total_price' => "required",
-            'status' => "required|in:PENDING,SUCCESS,CANCELLED,FAILED,ONPROSSES",
-            'payment' => 'required|in:QRIS,MANUAL',
-            'point_usage' => "required|min:0",
-            'items' => "required|array",
-            'items.*.id' => "required|exists:products,id",
-            'items.*.quantity' => "required|min:1",
-            'items.*.note' => "nullable",
-        ]);
+    //     $validatedDataTransaction = $request->validate([
+    //         'address' => "nullable",
+    //         'total_price' => "required",
+    //         'status' => "required|in:PENDING,SUCCESS,CANCELLED,FAILED,ONPROSSES",
+    //         'payment' => 'required|in:QRIS,MANUAL',
+    //         'point_usage' => "required|min:0",
+    //         'items' => "required|array",
+    //         'items.*.id' => "required|exists:products,id",
+    //         'items.*.quantity' => "required|min:1",
+    //         'items.*.note' => "nullable",
+    //     ]);
 
-        $validatedDataUser = $request->validate([
-            'user' => 'required|array',
-        ]);
+    //     $validatedDataUser = $request->validate([
+    //         'user' => 'required|array',
+    //     ]);
 
-        $existingpoint = $this->existingpoint($validatedDataUser, $validatedDataTransaction);
+    //     $existingpoint = $this->existingpoint($validatedDataUser, $validatedDataTransaction);
 
-        $items = $validatedDataTransaction['items'];
-        if (!$this->validatecart($items)) {
-            return response()->json([
-                'message' => 'Checkout failed',
-                'data' => 'Item from different merchant'
-            ]);
-        } else {
-            $group = $this->validationusergroups($user);
-            if ($group) {
-                if ($existingpoint) {
-                    $totalprice = $validatedDataTransaction['total_price'] - $existingpoint;
-                    $transaction = Transaction::create([
-                        'users_id' => $user,
-                        'address' => $validatedDataTransaction['address'],
-                        'total_price' => $totalprice,
-                        'status' => $validatedDataTransaction['status'],
-                        'payment' => $validatedDataTransaction['payment'],
-                        'point_usage' => $existingpoint,
-                    ]);
-                    //Update point 
-                    $point = $validatedDataUser['user']['point'];
-                    $resultpoint = $point - $existingpoint;
-                    $updatedUser = User::find($user);
-                    $updatedUser->point = $resultpoint;
-                    $updatedUser->save();
+    //     $items = $validatedDataTransaction['items'];
+    //     if (!$this->validatecart($items)) {
+    //         return response()->json([
+    //             'message' => 'Checkout failed',
+    //             'data' => 'Item from different merchant'
+    //         ]);
+    //     } else {
+    //         $group = $this->validationusergroups($user);
+    //         if ($group) {
+    //             if ($existingpoint) {
+    //                 $totalprice = $validatedDataTransaction['total_price'] - $existingpoint;
+    //                 $transaction = Transaction::create([
+    //                     'users_id' => $user,
+    //                     'address' => $validatedDataTransaction['address'],
+    //                     'total_price' => $totalprice,
+    //                     'status' => $validatedDataTransaction['status'],
+    //                     'payment' => $validatedDataTransaction['payment'],
+    //                     'point_usage' => $existingpoint,
+    //                 ]);
+    //                 //Update point 
+    //                 $point = $validatedDataUser['user']['point'];
+    //                 $resultpoint = $point - $existingpoint;
+    //                 $updatedUser = User::find($user);
+    //                 $updatedUser->point = $resultpoint;
+    //                 $updatedUser->save();
 
-                    foreach ($items as $item) {
-                        TransactionItem::create([
-                            'users_id' => $user,
-                            'products_id' => $item['id'],
-                            'transactions_id' => $transaction['id'],
-                            'quantity' => $item['quantity'],
-                            'note' =>  $item['note'],
-                        ]);
-                    }
-                    return ResponseFormatter::success($transaction->load('items.product'), 'Transaksi berhasil');
-                } elseif (!$existingpoint) {
-                    $point = $this->potentialpoint($group, $items, $validatedDataTransaction);
-                    $transaction = Transaction::create([
-                        'users_id' => $user,
-                        'address' => $validatedDataTransaction['address'],
-                        'total_price' => $validatedDataTransaction['total_price'],
-                        'status' => $validatedDataTransaction['status'],
-                        'payment' => $validatedDataTransaction['payment'],
-                        'point_usage' => $point,
+    //                 foreach ($items as $item) {
+    //                     TransactionItem::create([
+    //                         'users_id' => $user,
+    //                         'products_id' => $item['id'],
+    //                         'transactions_id' => $transaction['id'],
+    //                         'quantity' => $item['quantity'],
+    //                         'note' =>  $item['note'],
+    //                     ]);
+    //                 }
+    //                 return ResponseFormatter::success($transaction->load('items.product'), 'Transaksi berhasil');
+    //             } elseif (!$existingpoint) {
+    //                 $point = $this->potentialpoint($group, $items, $validatedDataTransaction);
+    //                 $transaction = Transaction::create([
+    //                     'users_id' => $user,
+    //                     'address' => $validatedDataTransaction['address'],
+    //                     'total_price' => $validatedDataTransaction['total_price'],
+    //                     'status' => $validatedDataTransaction['status'],
+    //                     'payment' => $validatedDataTransaction['payment'],
+    //                     'point_usage' => $point,
 
-                    ]);
-                    //Update point
-                    $updatedUser = User::find($user);
-                    $updatedUser->point = $point;
-                    $updatedUser->save();
+    //                 ]);
+    //                 //Update point
+    //                 $updatedUser = User::find($user);
+    //                 $updatedUser->point = $point;
+    //                 $updatedUser->save();
 
-                    foreach ($items as $item) {
-                        TransactionItem::create([
-                            'users_id' => $user,
-                            'products_id' => $item['id'],
-                            'transactions_id' => $transaction['id'],
-                            'quantity' => $item['quantity'],
-                            'note' =>  $item['note'],
-                        ]);
-                    }
-                    return ResponseFormatter::success($transaction->load('items.product'), 'Transaksi berhasil');
-                }
-            } else {
-                return response()->json([
-                    'message' => 'Checkout successful',
-                    'data' => 'not registered usergroup',
-                ]);
-            }
-        }
-    }
+    //                 foreach ($items as $item) {
+    //                     TransactionItem::create([
+    //                         'users_id' => $user,
+    //                         'products_id' => $item['id'],
+    //                         'transactions_id' => $transaction['id'],
+    //                         'quantity' => $item['quantity'],
+    //                         'note' =>  $item['note'],
+    //                     ]);
+    //                 }
+    //                 return ResponseFormatter::success($transaction->load('items.product'), 'Transaksi berhasil');
+    //             }
+    //         } else {
+    //             return response()->json([
+    //                 'message' => 'Checkout successful',
+    //                 'data' => 'not registered usergroup',
+    //             ]);
+    //         }
+    //     }
+    // }
 
     public function confirmation(Request $request)
     {
@@ -368,6 +368,79 @@ class TransactionController extends Controller
                 'message' => 'something went wrong',
                 'error' => $error
             ], 'Authenticated Fail', 500);
+        }
+    }
+
+
+    public function detailtransaction(Request $request)
+    {
+        $user = Auth::user()->id;
+        try {
+            if ($user) {
+
+                $transaction = Transaction::with('items.product', 'items.product.merchant')->where('users_id', $user)->orderBy('created_at', 'desc')->first();
+                return ResponseFormatter::success($transaction, 'Data transaksi dapat ditemukan');
+            } else {
+                return ResponseFormatter::error(null, 'Data Transaksi Tidak Ditemukan', 400);
+            }
+        } catch (Exception $error) {
+            return ResponseFormatter::error(
+                [
+                    'error' => $error,
+                    'message' => 'Something Went Wrong',
+
+                ],
+                'Authenticated Failed',
+                500
+            );
+        }
+    }
+
+    public function checkout(Request $request)
+    {
+        $user = Auth::user()->id;
+
+        $request->validate([
+            'address' => 'nullable',
+            'total_price' => 'required',
+            'status' => 'required|in:PENDING, SUCCESS, CANCELLED, FAILED, SHIPPING, SHIPPED',
+            'payment' => 'required|in:QRIS,MANUAL',
+            'point_usage' => 'required|min:0',
+            'items' => 'required|array',
+            'items.*.id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|min:1',
+            'items.*.note' => 'nullable',
+        ]);
+
+        $items = $request->items;
+        
+        if (!$this->validatecart($items)) {
+            return response()->json([
+                'message' => 'Checkout failed',
+                'data' => 'Item from different merchant'
+            ]);
+        } 
+        else {
+            $transaction = Transaction::create([
+                'users_id' => $user,
+                'address' => $request->address,
+                'total_price' => $request->total_price,
+                'status' => $request->status,
+                'payment' => $request->payment,
+                'point_usage' => $request->point_usage,
+            ]);
+
+            foreach ($request->items as $product) {
+
+                TransactionItem::create([
+                    'users_id' => $user,
+                    'products_id' => $product['id'],
+                    'transactions_id' => $transaction->id,
+                    'quantity' => $product['quantity'],
+                    'note' => $product['note'],
+                ]);
+            }
+            return ResponseFormatter::success($transaction->load('items.product'), 'Data list transaksi berhasil diambil');
         }
     }
 }
