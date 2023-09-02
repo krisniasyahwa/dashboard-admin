@@ -106,7 +106,7 @@ class TransactionController extends Controller
     public function validatecart($items)
     {
         //Get the first merchant_id from first item
-        
+
         $merchant_id = $items[0]['product']['merchants_id'];
         // //Loop to check if all item have same merchant_id
         foreach ($items as $item) {
@@ -372,7 +372,7 @@ class TransactionController extends Controller
     }
 
 
-    public function detailtransaction(Request $request)
+    public function detailtransaction()
     {
         $user = Auth::user()->id;
         try {
@@ -413,14 +413,13 @@ class TransactionController extends Controller
         ]);
 
         $items = $request->items;
-        
+
         if (!$this->validatecart($items)) {
             return response()->json([
                 'message' => 'Checkout failed',
                 'data' => 'Item from different merchant'
             ]);
-        } 
-        else {
+        } else {
             $transaction = Transaction::create([
                 'users_id' => $user,
                 'address' => $request->address,
@@ -441,6 +440,21 @@ class TransactionController extends Controller
                 ]);
             }
             return ResponseFormatter::success($transaction->load('items.product'), 'Data list transaksi berhasil diambil');
+        }
+    }
+
+    public function payments(Request $request)
+    {
+        $user = Auth::user()->id;
+        $method = $request->input('method');
+        $result =  Transaction::where('users_id', $user)->orderBy('created_at', 'desc')->first();
+        if ($result) {
+            //Updated Payments
+            $result->payment = $method;
+            $result->save();
+            return ResponseFormatter::success($result, 'success');
+        }else{
+            return ResponseFormatter::error(null, 'error');
         }
     }
 }
