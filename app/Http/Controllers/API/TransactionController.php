@@ -443,18 +443,35 @@ class TransactionController extends Controller
         }
     }
 
-    public function payments(Request $request)
-    {
+    // public function payments($totalprice, Request $request )
+    // {
+    //     $user = Auth::user()->id;
+    //     $method = $request->input('method');
+    //     $result =  Transaction::where('users_id', $user)->orderBy('created_at', 'desc')->first();
+    //     if ($result) {
+    //         //Update Total Price
+    //         $result->total_price = $totalprice;
+    //         //Updated Payments
+    //         $result->payment = $method;
+    //         //Save Updated
+    //         $result->save();
+    //         return ResponseFormatter::success($result, 'success');
+    //     }else{
+    //         return ResponseFormatter::error(null, 'error');
+    //     }
+    // }
+
+    public function payments(Request $request){
         $user = Auth::user()->id;
-        $method = $request->input('method');
-        $result =  Transaction::where('users_id', $user)->orderBy('created_at', 'desc')->first();
-        if ($result) {
-            //Updated Payments
-            $result->payment = $method;
-            $result->save();
-            return ResponseFormatter::success($result, 'success');
-        }else{
-            return ResponseFormatter::error(null, 'error');
-        }
+        $request->validate([
+            'total_price' => 'required',
+            'payment' => 'required|in:QRIS,MANUAL,CASH', 
+        ]);
+        $transaction = Transaction::where('users_id', $user)->orderBy('created_at', 'desc')->first();
+        //Update totalprice and payment method
+        $transaction->total_price = $request->total_price;
+        $transaction->payment = $request->payment;
+        $transaction->save();
+        return ResponseFormatter::success($transaction, "success");
     }
 }
