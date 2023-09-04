@@ -486,6 +486,7 @@ class TransactionController extends Controller
         $request->validate([
             'address' => 'nullable',
             'total_price' => 'required',
+            'takeaway_charge' => 'required|min:0',
             'status' => 'required|in:PENDING, SUCCESS, CANCELLED, FAILED, SHIPPING, SHIPPED',
             'payment' => 'required|in:QRIS,MANUAL',
             'point_usage' => 'required|min:0',
@@ -495,14 +496,14 @@ class TransactionController extends Controller
             'items.*.note' => 'nullable',
         ]);
 
-        $items = $request->items;
 
-        if (!$this->validatecart($items)) {
+        if (!$this->validatecart($request->items)) {
             return response()->json([
                 'message' => 'Checkout failed',
                 'data' => 'Item from different merchant'
             ]);
-        } else {
+        } 
+        else {
             $transaction = Transaction::create([
                 'users_id' => $user,
                 'address' => $request->address,
