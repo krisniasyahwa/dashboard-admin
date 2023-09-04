@@ -37,6 +37,8 @@ Route::group(['middleware' => ['auth:sanctum', 'verified']], function () {
             Route::resource('transaction', TransactionController::class)->only([
                 'index', 'show', 'edit', 'update'
             ]);
+            Route::get('transaction/{transaction}/edit/{previous_page}', [TransactionController::class, 'edit'])->name('transaction.edit');
+            Route::put('dashboard/transaction/{transaction}/update/{previous_page}', [TransactionController::class, 'update'])->name('transaction.update');
             Route::resource('user', UserController::class)->only([
                 'index', 'edit', 'update', 'destroy'
             ]);

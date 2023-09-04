@@ -1,3 +1,4 @@
+#Laravel Specific files
 /node_modules
 /public/hot
 /public/storage
@@ -11,3 +12,10 @@ Homestead.json
 Homestead.yaml
 npm-debug.log
 yarn-error.log
+# ignore Editor files
+*.sublime-project
+*.sublime-workspace
+*.komodoproject
+_ide_helper.php
+/.idea
+/.vscode

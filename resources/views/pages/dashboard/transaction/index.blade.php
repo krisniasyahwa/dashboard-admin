@@ -17,6 +17,7 @@
                     { data: 'user.name', name: 'user.name' },
                     { data: 'total_price', name: 'total_price' },
                     { data: 'payment', name: 'payment' },
+                    { data: 'status_payment', name: 'status_payment' },
                     { data: 'status', name: 'status' },
                     {
                         data: 'action',
@@ -30,7 +31,7 @@
         </script>
     </x-slot>
 
-    <div class="py-12">
+    <div class="py-2">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="shadow overflow-hidden sm:rounded-md">
                 <div class="px-4 py-5 bg-white sm:p-6">
@@ -38,10 +39,11 @@
                         <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Nama</th>
+                            <th style="text-align: left;">Nama</th>
                             <th>Total Harga</th>
-                            <th>Pembayaran</th>
-                            <th>Status</th>
+                            <th>Metode Pembayaran</th>
+                            <th>Status Pembayaran</th>
+                            <th>Status Pemesanan</th>
                             <th>Aksi</th>
                         </tr>
                         </thead>
