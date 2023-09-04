@@ -19,7 +19,8 @@ class Transaction extends Model
         'shipping_price',
         'status',
         'point_usage',
-        'status_payment'
+        'status_payment',
+        'image'
     ];
     //Create relationship with Users table->One to Many->users_id as foreign key
     public function user()
