@@ -23,12 +23,12 @@ class TransactionController extends Controller
             return DataTables::of($query)
                 ->addColumn('action', function ($item) {
                     return '
-                        <a class="inline-block border border-blue-700 bg-blue-700 text-white rounded-md px-2 py-1 m-1 transition duration-500 ease select-none hover:bg-blue-800 focus:outline-none focus:shadow-outline" 
+                        <a class="inline-block border border-blue-700 bg-blue-700 text-white rounded-md px-2 py-1 m-1 transition duration-500 ease select-none hover:bg-blue-800 focus:outline-none focus:shadow-outline"
                             href="' . route('dashboard.transaction.show', $item->id) . '">
                             Show
                         </a>
-                        <a class="inline-block border border-gray-700 bg-gray-700 text-white rounded-md px-2 py-1 m-1 transition duration-500 ease select-none hover:bg-gray-800 focus:outline-none focus:shadow-outline" 
-                            href="' . route('dashboard.transaction.edit', $item->id) . '">
+                        <a class="inline-block border border-gray-700 bg-gray-700 text-white rounded-md px-2 py-1 m-1 transition duration-500 ease select-none hover:bg-gray-800 focus:outline-none focus:shadow-outline"
+                            href="' . route('dashboard.transaction.edit',['transaction' => $item->id, 'previous_page' => 'index'] ) . '">
                             Edit
                         </a>';
                 })
@@ -90,10 +90,11 @@ class TransactionController extends Controller
      * @param  \App\Models\Transaction  $transaction
      * @return \Illuminate\Contracts\Foundation\Application|\Illuminate\Contracts\View\Factory|\Illuminate\Http\Response|\Illuminate\View\View
      */
-    public function edit(Transaction $transaction)
+    public function edit(Transaction $transaction, $previous_page='index')
     {
         return view('pages.dashboard.transaction.edit',[
-            'item' => $transaction
+            'item' => $transaction,
+            'previous_page' => $previous_page
         ]);
     }
 
@@ -104,13 +105,15 @@ class TransactionController extends Controller
      * @param  \App\Models\Transaction  $transaction
      * @return \Illuminate\Http\RedirectResponse
      */
-    public function update(TransactionRequest $request, Transaction $transaction)
+    public function update(TransactionRequest $request, Transaction $transaction, $previous_page='index')
     {
         $data = $request->all();
 
         $transaction->update($data);
-
-        return redirect()->route('dashboard.transaction.index');
+        if ($previous_page == 'show'){
+            return redirect()->route('dashboard.transaction.' . $previous_page, $transaction->id);
+        }
+        return redirect()->route('dashboard.transaction.' . $previous_page, $transaction->id);
     }
 
     /**

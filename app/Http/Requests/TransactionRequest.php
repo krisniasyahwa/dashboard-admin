@@ -25,7 +25,8 @@ class TransactionRequest extends FormRequest
     public function rules()
     {
         return [
-            'status' => 'in:PENDING,SUCCESS,CANCELLED,FAILED,SHIPPING,SHIPPED'
+            'status' => 'in:PENDING,PROCESS,READY,SUCCESS',
+            'status_payment' => 'in:UNPAID,REVIEW,PAID,REJECTED,EXPIRED'
         ];
     }
 }
