@@ -34,7 +34,7 @@ class TransactionController extends Controller
         try {
             //Filtering data transaction by id
             if ($id) {
-                $transaction = Transaction::with(['items.product'])->where('users_id', $user)->find($id);
+                $transaction = Transaction::with(['user', 'items.product'])->where('users_id', $user)->find($id);
                 if ($transaction)
                     return ResponseFormatter::success(
                         $transaction,
@@ -101,45 +101,128 @@ class TransactionController extends Controller
      * @return \Illuminate\Http\JsonResponse
      */
 
+    public function potentialpoint($user, $items, $validatedDataTransaction)
+    {
+        // $group = User::with('usergroup.group')->where('id',$user)->get();
+        //$group = $user;
+        if ($user === 'admin') {
+            $totalprice = $validatedDataTransaction['total_price'];
+            $rules = 20;
+            $potentialpoint = $totalprice / $rules;
+            return $potentialpoint;
+        } elseif ($user === 'member') {
+            return "Potential Point 20%";
+        } elseif ($user === 'dosen') {
+            return "Potential Point 50%";
+        }
+        return false;
+    }
+
+    public function existingpoint($user, $totalprice)
+    {
+        $totalprice = $totalprice['total_price'];
+        $existingpoint = $user['user']['point'];
+        if ($existingpoint > 0) {
+            $rules = $totalprice / 50;
+            return $rules;
+        }
+        return false;
+    }
+
+
 
     // public function checkout(Request $request)
     // {
-
     //     $user = Auth::user()->id;
 
-    //     $validatedData = $request->validate([
-    //         'total_price' => "required",
-    //         'shipping_price' => "required",
-    //         'payment' => "required|in:QRIS,CASH",
-    //         'status' => "required|in:PENDING,SUCCESS,CANCELLED,FAILED,ONPROSSES",
-    //         'point_usage' => "required|min:0",
+    //     $validatedDataTransaction = $request->validate([
     //         'address' => "nullable",
+    //         'total_price' => "required",
+    //         'status' => "required|in:PENDING,SUCCESS,CANCELLED,FAILED,ONPROSSES",
+    //         'payment' => 'required|in:QRIS,MANUAL',
+    //         'point_usage' => "required|min:0",
     //         'items' => "required|array",
     //         'items.*.id' => "required|exists:products,id",
     //         'items.*.quantity' => "required|min:1",
     //         'items.*.note' => "nullable",
     //     ]);
 
-    //     $transaction = Transaction::create([
-    //         'users_id' => $user,
-    //         'total_price' => $validatedData['total_price'],
-    //         'shipping_price' => $validatedData['shipping_price'],
-    //         'payment' => $validatedData['payment'],
-    //         'status' => $validatedData['status'],
-    //         'point_usage' => $validatedData['point_usage'],
-    //         'address' => $validatedData['address'],
+    //     $validatedDataUser = $request->validate([
+    //         'user' => 'required|array',
     //     ]);
 
-    //     foreach ($validatedData['items'] as $item) {
-    //         TransactionItem::create([
-    //             'users_id' => $user,
-    //             'products_id' => $item['id'],
-    //             'transactions_id' => $transaction['id'],
-    //             'quantity' => $item['quantity'],
-    //         ]);
-    //     }
+    //     $existingpoint = $this->existingpoint($validatedDataUser, $validatedDataTransaction);
 
-    //     return ResponseFormatter::success($transaction->load('items.product'), 'Transaksi berhasil');
+    //     $items = $validatedDataTransaction['items'];
+    //     if (!$this->validatecart($items)) {
+    //         return response()->json([
+    //             'message' => 'Checkout failed',
+    //             'data' => 'Item from different merchant'
+    //         ]);
+    //     } else {
+    //         $group = $this->validationusergroups($user);
+    //         if ($group) {
+    //             if ($existingpoint) {
+    //                 $totalprice = $validatedDataTransaction['total_price'] - $existingpoint;
+    //                 $transaction = Transaction::create([
+    //                     'users_id' => $user,
+    //                     'address' => $validatedDataTransaction['address'],
+    //                     'total_price' => $totalprice,
+    //                     'status' => $validatedDataTransaction['status'],
+    //                     'payment' => $validatedDataTransaction['payment'],
+    //                     'point_usage' => $existingpoint,
+    //                 ]);
+    //                 //Update point 
+    //                 $point = $validatedDataUser['user']['point'];
+    //                 $resultpoint = $point - $existingpoint;
+    //                 $updatedUser = User::find($user);
+    //                 $updatedUser->point = $resultpoint;
+    //                 $updatedUser->save();
+
+    //                 foreach ($items as $item) {
+    //                     TransactionItem::create([
+    //                         'users_id' => $user,
+    //                         'products_id' => $item['id'],
+    //                         'transactions_id' => $transaction['id'],
+    //                         'quantity' => $item['quantity'],
+    //                         'note' =>  $item['note'],
+    //                     ]);
+    //                 }
+    //                 return ResponseFormatter::success($transaction->load('items.product'), 'Transaksi berhasil');
+    //             } elseif (!$existingpoint) {
+    //                 $point = $this->potentialpoint($group, $items, $validatedDataTransaction);
+    //                 $transaction = Transaction::create([
+    //                     'users_id' => $user,
+    //                     'address' => $validatedDataTransaction['address'],
+    //                     'total_price' => $validatedDataTransaction['total_price'],
+    //                     'status' => $validatedDataTransaction['status'],
+    //                     'payment' => $validatedDataTransaction['payment'],
+    //                     'point_usage' => $point,
+
+    //                 ]);
+    //                 //Update point
+    //                 $updatedUser = User::find($user);
+    //                 $updatedUser->point = $point;
+    //                 $updatedUser->save();
+
+    //                 foreach ($items as $item) {
+    //                     TransactionItem::create([
+    //                         'users_id' => $user,
+    //                         'products_id' => $item['id'],
+    //                         'transactions_id' => $transaction['id'],
+    //                         'quantity' => $item['quantity'],
+    //                         'note' =>  $item['note'],
+    //                     ]);
+    //                 }
+    //                 return ResponseFormatter::success($transaction->load('items.product'), 'Transaksi berhasil');
+    //             }
+    //         } else {
+    //             return response()->json([
+    //                 'message' => 'Checkout successful',
+    //                 'data' => 'not registered usergroup',
+    //             ]);
+    //         }
+    //     }
     // }
 
     public function validatecart($items)
@@ -189,78 +272,74 @@ class TransactionController extends Controller
         return $product;
     }
 
-    public function checkout(Request $request)
-    {
-        $user = Auth::user()->id;
+    // public function checkout(Request $request)
+    // {
+    //     $user = Auth::user()->id;
 
-        $validatedDataTransaction = $request->validate([
-            'address' => "nullable",
-            'total_price' => "required",
-            'status' => "required|in:PENDING,SUCCESS,CANCELLED,FAILED,ONPROSSES",
-            'payment' => 'required|in:QRIS,MANUAL',
-            'point_usage' => "required|min:0",
-            'items' => "required|array",
-            'items.*.id' => "required|exists:products,id",
-            'items.*.quantity' => "required|min:1",
-            'items.*.note' => "nullable",
-        ]);
+    //     $validatedDataTransaction = $request->validate([
+    //         'address' => "nullable",
+    //         'total_price' => "required",
+    //         'status' => "required|in:PENDING,SUCCESS,CANCELLED,FAILED,ONPROSSES",
+    //         'payment' => 'required|in:QRIS,MANUAL',
+    //         'point_usage' => "required|min:0",
+    //         'items' => "required|array",
+    //         'items.*.id' => "required|exists:products,id",
+    //         'items.*.quantity' => "required|min:1",
+    //         'items.*.note' => "nullable",
+    //     ]);
 
-        $items = $validatedDataTransaction['items'];
+    //     $items = $validatedDataTransaction['items'];
 
-        if (!$this->validatecart($items)) {
-            return response()->json([
-                'message' => 'Checkout failed',
-                'data' => 'Item from different merchant'
-            ]);
-        } else {
-            $UserGroup = $this->validationusergroups($user);
-            if ($UserGroup) {
-                $promoproduct = $this->validationpromoprice($items);
-                return response()->json([
-                    'message' => 'Checkout successful',
-                    'data' => $promoproduct,
-                ]);
-            }elseif(!$UserGroup){
-                return response()->json([
-                    'message' => 'Checkout successful',
-                    'data' => $UserGroup,
-                ]);
-            }
+    //     if (!$this->validatecart($items)) {
+    //         return response()->json([
+    //             'message' => 'Checkout failed',
+    //             'data' => 'Item from different merchant'
+    //         ]);
+    //     } else {
+    //         $UserGroup = $this->validationusergroups($user);
+    //         if ($UserGroup) {
+    //             $promoproduct = $this->validationpromoprice($items);
+    //             return response()->json([
+    //                 'message' => 'Checkout successful',
+    //                 'data' => $promoproduct,
+    //             ]);
+    //         }elseif(!$UserGroup){
+    //             return response()->json([
+    //                 'message' => 'Checkout successful',
+    //                 'data' => $UserGroup,
+    //             ]);
+    //         }
 
 
 
 
             
-        }
+    //     }
 
 
+    //     $transaction = Transaction::create([
+    //         'users_id' => $user,
+    //         'address' => $validatedDataTransaction['address'],
+    //         'total_price' => $validatedDataTransaction['total_price'],
+    //         'status' => $validatedDataTransaction['status'],
+    //         'payment' => $validatedDataTransaction['payment'],
+    //         'point_usage' => $validatedDataTransaction['point_usage'],
 
+    //     ]);
 
+    //     foreach ($items as $item){
+    //         TransactionItem::create([
+    //             'users_id' => $user,
+    //             'products_id' => $item['id'],
+    //             'transactions_id' => $transaction['id'],
+    //             'quantity' => $item['quantity'],
+    //             'note' =>  $item['note'],
+    //         ]);
+    //     }
 
+    //     return ResponseFormatter::success($transaction->load('items.product'), 'Transaksi berhasil');
 
-        // $transaction = Transaction::create([
-        //     'users_id' => $user,
-        //     'address' => $validatedDataTransaction['address'],
-        //     'total_price' => $validatedDataTransaction['total_price'],
-        //     'status' => $validatedDataTransaction['status'],
-        //     'payment' => $validatedDataTransaction['payment'],
-        //     'point_usage' => $validatedDataTransaction['point_usage'],
-
-        // ]);
-
-        // foreach ($items as $item){
-        //     TransactionItem::create([
-        //         'users_id' => $user,
-        //         'products_id' => $item['id'],
-        //         'transactions_id' => $transaction['id'],
-        //         'quantity' => $item['quantity'],
-        //         'note' =>  $item['note'],
-        //     ]);
-        // }
-
-        //return ResponseFormatter::success($transaction->load('items.product'), 'Transaksi berhasil');
-
-    }
+    // }
 
     public function confirmation(Request $request)
     {
@@ -373,5 +452,93 @@ class TransactionController extends Controller
                 'error' => $error
             ], 'Authenticated Fail', 500);
         }
+    }
+
+
+    public function detailtransaction()
+    {
+        $user = Auth::user()->id;
+        try {
+            if ($user) {
+
+                $transaction = Transaction::with('items.product', 'items.product.merchant')->where('users_id', $user)->orderBy('created_at', 'desc')->first();
+                return ResponseFormatter::success($transaction, 'Data transaksi dapat ditemukan');
+            } else {
+                return ResponseFormatter::error(null, 'Data Transaksi Tidak Ditemukan', 400);
+            }
+        } catch (Exception $error) {
+            return ResponseFormatter::error(
+                [
+                    'error' => $error,
+                    'message' => 'Something Went Wrong',
+
+                ],
+                'Authenticated Failed',
+                500
+            );
+        }
+    }
+
+    public function checkout(Request $request)
+    {
+        $user = Auth::user()->id;
+
+        $request->validate([
+            'address' => 'nullable',
+            'total_price' => 'required',
+            'status' => 'required|in:PENDING, SUCCESS, CANCELLED, FAILED, SHIPPING, SHIPPED',
+            'payment' => 'required|in:QRIS,MANUAL',
+            'point_usage' => 'required|min:0',
+            'items' => 'required|array',
+            'items.*.id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|min:1',
+            'items.*.note' => 'nullable',
+        ]);
+
+        $items = $request->items;
+
+        if (!$this->validatecart($items)) {
+            return response()->json([
+                'message' => 'Checkout failed',
+                'data' => 'Item from different merchant'
+            ]);
+        } else {
+            $transaction = Transaction::create([
+                'users_id' => $user,
+                'address' => $request->address,
+                'total_price' => $request->total_price,
+                'status' => $request->status,
+                'payment' => $request->payment,
+                'point_usage' => $request->point_usage,
+            ]);
+
+            foreach ($request->items as $product) {
+
+                TransactionItem::create([
+                    'users_id' => $user,
+                    'products_id' => $product['id'],
+                    'transactions_id' => $transaction->id,
+                    'quantity' => $product['quantity'],
+                    'note' => $product['note'],
+                ]);
+            }
+            return ResponseFormatter::success($transaction->load('items.product'), 'Data list transaksi berhasil diambil');
+        }
+    }
+
+
+
+    public function payments(Request $request){
+        $user = Auth::user()->id;
+        $request->validate([
+            'total_price' => 'required',
+            'payment' => 'required|in:QRIS,MANUAL,CASH', 
+        ]);
+        $transaction = Transaction::where('users_id', $user)->orderBy('created_at', 'desc')->first();
+        //Update totalprice and payment method
+        $transaction->total_price = $request->total_price;
+        $transaction->payment = $request->payment;
+        $transaction->save();
+        return ResponseFormatter::success($transaction, "success");
     }
 }
