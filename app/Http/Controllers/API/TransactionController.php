@@ -280,21 +280,44 @@ class TransactionController extends Controller
     // }
     public function confirmpayment(ImageStoreRequest $request){
         $user = Auth::user();
-        $validatedData = $request->validated();
+        $request->validated();
         
         // Find the user's latest transaction
-        $transaction = Transaction::where('users_id', $user->id)->latest()->first();
-    
-        if (!$transaction) {
-            return ResponseFormatter::error(null, 'No transaction found for this user.');
+        $transaction = Transaction::with('items.product.merchant')->where('users_id', $user->id)->latest()->first();
+        $merchants = $transaction['items'][0]['product']['merchants_id'];
+
+        if($transaction) {
+            if($merchants === 1){
+                //Store the image and update the transaction
+                $imagePath = $request->file('image')->store('transaction/warmingup');
+                $transaction->payment_image = $imagePath;
+                $transaction->save(); 
+                return ResponseFormatter::success($transaction, 'Image uploaded successfully.');           
+            }
+            if($merchants === 2){
+                //Store the image and update the transaction
+                $imagePath = $request->file('image')->store('transaction/kortail');
+                $transaction->payment_image = $imagePath;
+                $transaction->save();  
+                return ResponseFormatter::success($transaction, 'Image uploaded successfully.');          
+            }
+            if($merchants === 3){
+                //Store the image and update the transaction
+                $imagePath = $request->file('image')->store('transaction/kortail');
+                $transaction->payment_image = $imagePath;
+                $transaction->save();
+                return ResponseFormatter::success($transaction, 'Image uploaded successfully.');            
+            }else{
+                // Store the image and update the transaction
+                $imagePath = $request->file('image')->store('transaction');
+                $transaction->payment_image = $imagePath;
+                $transaction->save();
+                return ResponseFormatter::success($transaction, 'Image uploaded successfully.');
+            }    
+        }else{
+            return ResponseFormatter::error(null, 'Transaction Not Found.');
         }
-    
-        // Store the image and update the transaction
-        $imagePath = $request->file('image')->store('transaction');
-        $transaction->image = $imagePath;
-        $transaction->save();
-    
-        return ResponseFormatter::success($transaction, 'Image uploaded successfully.');
+
     }
     
 }
