@@ -24,11 +24,11 @@ class ProductController extends Controller
             return DataTables::of($query)
                 ->addColumn('action', function ($item) {
                     return '
-                        <a class="inline-block border border-blue-700 bg-blue-700 text-white rounded-md px-2 py-1 m-1 transition duration-500 ease select-none hover:bg-blue-800 focus:outline-none focus:shadow-outline" 
+                        <a class="inline-block border border-blue-700 bg-blue-700 text-white rounded-md px-2 py-1 m-1 transition duration-500 ease select-none hover:bg-blue-800 focus:outline-none focus:shadow-outline"
                             href="' . route('dashboard.product.gallery.index', $item->id) . '">
                             Gallery
                         </a>
-                        <a class="inline-block border border-gray-700 bg-gray-700 text-white rounded-md px-2 py-1 m-1 transition duration-500 ease select-none hover:bg-gray-800 focus:outline-none focus:shadow-outline" 
+                        <a class="inline-block border border-gray-700 bg-gray-700 text-white rounded-md px-2 py-1 m-1 transition duration-500 ease select-none hover:bg-gray-800 focus:outline-none focus:shadow-outline"
                             href="' . route('dashboard.product.edit', $item->id) . '">
                             Edit
                         </a>
@@ -41,6 +41,17 @@ class ProductController extends Controller
                 })
                 ->editColumn('price', function ($item) {
                     return number_format($item->price);
+                })
+                ->editColumn('best_seller', function ($item) {
+                    return $item->best_seller ? 'True' : 'False';
+                })
+
+                ->editColumn('takeway_charge', function ($item) {
+                    return $item->takeway_charge ? number_format($item->takeway_charge) : 'Not Set';
+                })
+
+                ->editColumn('promo_price', function ($item) {
+                    return $item->promo_price ? number_format($item->promo_price) : 'Not Set';
                 })
                 ->rawColumns(['action'])
                 ->make();
@@ -99,10 +110,16 @@ class ProductController extends Controller
         $categories = ProductCategory::with('merchants')->get();
         $merchants = Merchant::all();
 
+        // dynamic backpage validation
+        $previous_page = explode('/',url()->previous());
+        // end($previous_page) == "product" ? $previous_page = url()->previous() : $previous_page = route('dashboard.product.index', ['id' => $product->id]);
+        $previous_page = route('dashboard.product.index', ['search' => $product->name]);
+
         return view('pages.dashboard.product.edit', [
             'item' => $product,
             'categories' => $categories,
-            'merchants' => $merchants
+            'merchants' => $merchants,
+            'previous_page' => $previous_page
         ]);
     }
 
@@ -119,7 +136,8 @@ class ProductController extends Controller
 
         $product->update($data);
 
-        return redirect()->route('dashboard.product.index');
+        return redirect($data['previous_page']);
+        // return redirect()->route('dashboard.product.index');
     }
 
     /**
