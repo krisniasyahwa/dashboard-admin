@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class RenamePromoTable extends Migration
+class AddPaymentImageToTransactions extends Migration
 {
     /**
      * Run the migrations.
@@ -13,8 +13,10 @@ class RenamePromoTable extends Migration
      */
     public function up()
     {
-        schema::rename('promo', 'promos');
-        //
+        Schema::table('transactions', function (Blueprint $table) {
+            $table->string('payment_image')->after('status_payment')->nullable();
+            //
+        });
     }
 
     /**
@@ -24,6 +26,8 @@ class RenamePromoTable extends Migration
      */
     public function down()
     {
-        //
+        Schema::table('transactions', function (Blueprint $table) {
+            //
+        });
     }
 }

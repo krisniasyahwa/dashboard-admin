@@ -9,6 +9,7 @@ use App\Models\TransactionItem;
 use App\Models\User;
 use App\Models\Product;
 use App\Traits\FilterByDate;
+use App\Http\Requests\ImageStoreRequest;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -100,6 +101,55 @@ class TransactionController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
+    public function checkout(Request $request)
+    {
+        $user = Auth::user()->id;
+
+        $request->validate([
+            'address' => 'nullable',
+            'total_price' => 'required',
+            'takeaway_charge' => 'required|min:0',
+            'status' => 'required|in:PENDING, SUCCESS, CANCELLED, FAILED, SHIPPING, SHIPPED',
+            'payment' => 'required|in:QRIS,MANUAL',
+            'point_usage' => 'required|min:0',
+            'items' => 'required|array',
+            'items.*.id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|min:1',
+            'items.*.note' => 'nullable',
+        ]);
+
+
+        if (!$this->validatecart($request->items)) {
+            return response()->json([
+                'message' => 'Checkout failed',
+                'data' => 'Item from different merchant'
+            ]);
+        } 
+        else {
+            $transaction = Transaction::create([
+                'users_id' => $user,
+                'address' => $request->address,
+                'total_price' => $request->total_price,
+                'status' => $request->status,
+                'payment' => $request->payment,
+                'point_usage' => $request->point_usage,
+            ]);
+
+            foreach ($request->items as $product) {
+
+                TransactionItem::create([
+                    'users_id' => $user,
+                    'products_id' => $product['id'],
+                    'transactions_id' => $transaction->id,
+                    'quantity' => $product['quantity'],
+                    'note' => $product['note'],
+                ]);
+            }
+            return ResponseFormatter::success($transaction->load('items.product'), 'Data list transaksi berhasil diambil');
+        }
+    }
+
+
 
     public function potentialpoint($user, $items, $validatedDataTransaction)
     {
@@ -128,102 +178,6 @@ class TransactionController extends Controller
         }
         return false;
     }
-
-
-
-    // public function checkout(Request $request)
-    // {
-    //     $user = Auth::user()->id;
-
-    //     $validatedDataTransaction = $request->validate([
-    //         'address' => "nullable",
-    //         'total_price' => "required",
-    //         'status' => "required|in:PENDING,SUCCESS,CANCELLED,FAILED,ONPROSSES",
-    //         'payment' => 'required|in:QRIS,MANUAL',
-    //         'point_usage' => "required|min:0",
-    //         'items' => "required|array",
-    //         'items.*.id' => "required|exists:products,id",
-    //         'items.*.quantity' => "required|min:1",
-    //         'items.*.note' => "nullable",
-    //     ]);
-
-    //     $validatedDataUser = $request->validate([
-    //         'user' => 'required|array',
-    //     ]);
-
-    //     $existingpoint = $this->existingpoint($validatedDataUser, $validatedDataTransaction);
-
-    //     $items = $validatedDataTransaction['items'];
-    //     if (!$this->validatecart($items)) {
-    //         return response()->json([
-    //             'message' => 'Checkout failed',
-    //             'data' => 'Item from different merchant'
-    //         ]);
-    //     } else {
-    //         $group = $this->validationusergroups($user);
-    //         if ($group) {
-    //             if ($existingpoint) {
-    //                 $totalprice = $validatedDataTransaction['total_price'] - $existingpoint;
-    //                 $transaction = Transaction::create([
-    //                     'users_id' => $user,
-    //                     'address' => $validatedDataTransaction['address'],
-    //                     'total_price' => $totalprice,
-    //                     'status' => $validatedDataTransaction['status'],
-    //                     'payment' => $validatedDataTransaction['payment'],
-    //                     'point_usage' => $existingpoint,
-    //                 ]);
-    //                 //Update point 
-    //                 $point = $validatedDataUser['user']['point'];
-    //                 $resultpoint = $point - $existingpoint;
-    //                 $updatedUser = User::find($user);
-    //                 $updatedUser->point = $resultpoint;
-    //                 $updatedUser->save();
-
-    //                 foreach ($items as $item) {
-    //                     TransactionItem::create([
-    //                         'users_id' => $user,
-    //                         'products_id' => $item['id'],
-    //                         'transactions_id' => $transaction['id'],
-    //                         'quantity' => $item['quantity'],
-    //                         'note' =>  $item['note'],
-    //                     ]);
-    //                 }
-    //                 return ResponseFormatter::success($transaction->load('items.product'), 'Transaksi berhasil');
-    //             } elseif (!$existingpoint) {
-    //                 $point = $this->potentialpoint($group, $items, $validatedDataTransaction);
-    //                 $transaction = Transaction::create([
-    //                     'users_id' => $user,
-    //                     'address' => $validatedDataTransaction['address'],
-    //                     'total_price' => $validatedDataTransaction['total_price'],
-    //                     'status' => $validatedDataTransaction['status'],
-    //                     'payment' => $validatedDataTransaction['payment'],
-    //                     'point_usage' => $point,
-
-    //                 ]);
-    //                 //Update point
-    //                 $updatedUser = User::find($user);
-    //                 $updatedUser->point = $point;
-    //                 $updatedUser->save();
-
-    //                 foreach ($items as $item) {
-    //                     TransactionItem::create([
-    //                         'users_id' => $user,
-    //                         'products_id' => $item['id'],
-    //                         'transactions_id' => $transaction['id'],
-    //                         'quantity' => $item['quantity'],
-    //                         'note' =>  $item['note'],
-    //                     ]);
-    //                 }
-    //                 return ResponseFormatter::success($transaction->load('items.product'), 'Transaksi berhasil');
-    //             }
-    //         } else {
-    //             return response()->json([
-    //                 'message' => 'Checkout successful',
-    //                 'data' => 'not registered usergroup',
-    //             ]);
-    //         }
-    //     }
-    // }
 
     public function validatecart($items)
     {
@@ -272,188 +226,6 @@ class TransactionController extends Controller
         return $product;
     }
 
-    // public function checkout(Request $request)
-    // {
-    //     $user = Auth::user()->id;
-
-    //     $validatedDataTransaction = $request->validate([
-    //         'address' => "nullable",
-    //         'total_price' => "required",
-    //         'status' => "required|in:PENDING,SUCCESS,CANCELLED,FAILED,ONPROSSES",
-    //         'payment' => 'required|in:QRIS,MANUAL',
-    //         'point_usage' => "required|min:0",
-    //         'items' => "required|array",
-    //         'items.*.id' => "required|exists:products,id",
-    //         'items.*.quantity' => "required|min:1",
-    //         'items.*.note' => "nullable",
-    //     ]);
-
-    //     $items = $validatedDataTransaction['items'];
-
-    //     if (!$this->validatecart($items)) {
-    //         return response()->json([
-    //             'message' => 'Checkout failed',
-    //             'data' => 'Item from different merchant'
-    //         ]);
-    //     } else {
-    //         $UserGroup = $this->validationusergroups($user);
-    //         if ($UserGroup) {
-    //             $promoproduct = $this->validationpromoprice($items);
-    //             return response()->json([
-    //                 'message' => 'Checkout successful',
-    //                 'data' => $promoproduct,
-    //             ]);
-    //         }elseif(!$UserGroup){
-    //             return response()->json([
-    //                 'message' => 'Checkout successful',
-    //                 'data' => $UserGroup,
-    //             ]);
-    //         }
-
-
-
-
-            
-    //     }
-
-
-    //     $transaction = Transaction::create([
-    //         'users_id' => $user,
-    //         'address' => $validatedDataTransaction['address'],
-    //         'total_price' => $validatedDataTransaction['total_price'],
-    //         'status' => $validatedDataTransaction['status'],
-    //         'payment' => $validatedDataTransaction['payment'],
-    //         'point_usage' => $validatedDataTransaction['point_usage'],
-
-    //     ]);
-
-    //     foreach ($items as $item){
-    //         TransactionItem::create([
-    //             'users_id' => $user,
-    //             'products_id' => $item['id'],
-    //             'transactions_id' => $transaction['id'],
-    //             'quantity' => $item['quantity'],
-    //             'note' =>  $item['note'],
-    //         ]);
-    //     }
-
-    //     return ResponseFormatter::success($transaction->load('items.product'), 'Transaksi berhasil');
-
-    // }
-
-    public function confirmation(Request $request)
-    {
-        $user = Auth::user()->id;
-        $transaction_id = $request->input('id');
-        $image = $request->file('image');
-
-        $validatedData = $request->validate([
-            'status' => 'required|in:PENDING',
-            'payment' => 'required|in:QRIS',
-        ]);
-        $transaction = Transaction::where('users_id', $user)->where('id', $transaction_id)->first();
-
-        if ($request->hasFile('image')) {
-            $imagePath = $image->store('Public/transactions');
-            //$transaction->image = $imagePath;
-            if ($transaction->image) {
-                Storage::delete('Public/transactions');
-                $transaction->image = $imagePath;
-                return ResponseFormatter::success($transaction, 'Update Konfirmasi Berhasil');
-            } else {
-                $transaction->image = $imagePath;
-                return ResponseFormatter::success($transaction, 'Update Konfirmasi Berhasil');
-            }
-            //Update transaction 
-            // $transaction->status = $validatedData['status'];
-            // $transaction->payment = $validatedData['payment'];
-            // $transaction->save();
-        }
-    }
-
-    public function filtertransactions(Request $request)
-    {
-        $user = Auth::user()->id;
-        $limit = $request->input('limit|6');
-        $type = $request->input('type');
-        $payment = $request->input('payment');
-
-        try {
-            if ($type) {
-                if ($type === 'today') {
-                    $transaction = Transaction::with(['items.product'])->whereDate('created_at', Carbon::today())->where('users_id', $user)->get();
-                    if ($transaction->count() != 0) {
-                        return ResponseFormatter::success($transaction, 'Riwayat Transaksi untuk ' . $type . " berhasil diambil");
-                    } else {
-                        return ResponseFormatter::error('null', 'Data transaksi tidak ditemukan');
-                    }
-                }
-                if ($type === 'yesterday') {
-                    $transaction = Transaction::with(['items.product'])->whereDate('created_at', Carbon::yesterday())->where('users_id', $user)->get();
-                    if ($transaction->count() != 0) {
-                        return ResponseFormatter::success($transaction, 'Riwayat Transaksi untuk ' . $type . " berhasil diambil");
-                    } else {
-                        return ResponseFormatter::error('null', 'Data transaksi tidak ditemukan');
-                    }
-                }
-                if ($type === 'lastmonth') {
-                    $transaction = Transaction::with(['items.product'])->whereDate('created_at', Carbon::today()->subDays(30))->where('users_id', $user)->get();
-                    if ($transaction->count() != 0) {
-                        return ResponseFormatter::success($transaction, 'Riwayat Transaksi untuk ' . $type . " berhasil diambil");
-                    } else {
-                        return ResponseFormatter::error('null', 'Data transaksi tidak ditemukan');
-                    }
-                }
-                if ($type === 'lastyear') {
-                    $filter = Carbon::now()->subYear();
-                    $transaction = Transaction::with(['items.product'])->whereDate('created_at', $filter)->where('users_id', $user)->get();
-                    if ($transaction->count() != 0) {
-                        return ResponseFormatter::success($transaction, 'Riwayat Transaksi untuk ' . $type . " berhasil diambil");
-                    } else {
-                        return ResponseFormatter::error('null', 'Data transaksi tidak ditemukan');
-                    }
-                }
-                if ($type === 'lastweek') {
-                    $filter = Carbon::now()->subDays(7);
-                    $transaction = Transaction::with(['items.product'])->whereDate('created_at', $filter)->where('users_id', $user)->get();
-                    if ($transaction->count() != 0) {
-                        return ResponseFormatter::success($transaction, 'Riwayat Transaksi untuk ' . $type . " berhasil diambil");
-                    } else {
-                        return ResponseFormatter::error('null', 'Data transaksi tidak ditemukan');
-                    }
-                }
-                if ($type === 'last3Days') {
-                    $filter = Carbon::now()->subDays(3);
-                    $transaction = Transaction::with(['items.product'])->whereDate('created_at', $filter)->where('users_id', $user)->get();
-                    if ($transaction->count() != 0) {
-                        return ResponseFormatter::success($transaction, 'Riwayat Transaksi untuk ' . $type . " berhasil diambil");
-                    } else {
-                        return ResponseFormatter::error('null', 'Data transaksi tidak ditemukan');
-                    }
-                }
-            }
-            if ($payment) {
-                if ($payment === 'QRIS') {
-                    $transaction = Transaction::with('items.product')->where('users_id', $user)->where('payment', $payment)->get();
-                    return ResponseFormatter::success($transaction, 'Berhasil mengambil transaksi dengan metode pembayaran ' . $payment);
-                }
-                if ($payment === 'CASH') {
-                    $transaction = Transaction::with('items.product')->where('users_id', $user)->where('payment', $payment)->get();
-                    return ResponseFormatter::success($transaction, 'Berhasil mengambil transaksi dengan metode pembayaran ' . $payment);
-                } else {
-                    return ResponseFormatter::error(null, "Data transaksi tidak ditemukan", 400);
-                }
-            } else {
-                return ResponseFormatter::error('null', 'Data transaksi tidak ditemukan');
-            }
-        } catch (Exception $error) {
-            return ResponseFormatter::error([
-                'message' => 'something went wrong',
-                'error' => $error
-            ], 'Authenticated Fail', 500);
-        }
-    }
-
 
     public function detailtransaction()
     {
@@ -479,55 +251,6 @@ class TransactionController extends Controller
         }
     }
 
-    public function checkout(Request $request)
-    {
-        $user = Auth::user()->id;
-
-        $request->validate([
-            'address' => 'nullable',
-            'total_price' => 'required',
-            'status' => 'required|in:PENDING, SUCCESS, CANCELLED, FAILED, SHIPPING, SHIPPED',
-            'payment' => 'required|in:QRIS,MANUAL',
-            'point_usage' => 'required|min:0',
-            'items' => 'required|array',
-            'items.*.id' => 'required|exists:products,id',
-            'items.*.quantity' => 'required|min:1',
-            'items.*.note' => 'nullable',
-        ]);
-
-        $items = $request->items;
-
-        if (!$this->validatecart($items)) {
-            return response()->json([
-                'message' => 'Checkout failed',
-                'data' => 'Item from different merchant'
-            ]);
-        } else {
-            $transaction = Transaction::create([
-                'users_id' => $user,
-                'address' => $request->address,
-                'total_price' => $request->total_price,
-                'status' => $request->status,
-                'payment' => $request->payment,
-                'point_usage' => $request->point_usage,
-            ]);
-
-            foreach ($request->items as $product) {
-
-                TransactionItem::create([
-                    'users_id' => $user,
-                    'products_id' => $product['id'],
-                    'transactions_id' => $transaction->id,
-                    'quantity' => $product['quantity'],
-                    'note' => $product['note'],
-                ]);
-            }
-            return ResponseFormatter::success($transaction->load('items.product'), 'Data list transaksi berhasil diambil');
-        }
-    }
-
-
-
     public function payments(Request $request){
         $user = Auth::user()->id;
         $request->validate([
@@ -541,4 +264,60 @@ class TransactionController extends Controller
         $transaction->save();
         return ResponseFormatter::success($transaction, "success");
     }
+
+    // public function confirmpayment(ImageStoreRequest $request){
+    //     $user = Auth::user()->id;
+    //     $validatedData = $request->validated();
+    //     $transaction = Transaction::where('users_id', $user)->pluck('id')->first();
+    //     $imagepath = $request->file('image')->store('image/transaction');
+    //     // $transaction = Transaction::create([
+    //     //     'users_id' => $user,
+    //     //     'image' => $validatedData['image']
+    //     // ]);
+    //     $transaction->image = $imagepath;
+    //     $transaction->save();
+    //     return ResponseFormatter::success($transaction, 'Success');
+    // }
+    public function confirmpayment(ImageStoreRequest $request){
+        $user = Auth::user();
+        $request->validated();
+        
+        // Find the user's latest transaction
+        $transaction = Transaction::with('items.product.merchant')->where('users_id', $user->id)->latest()->first();
+        $merchants = $transaction['items'][0]['product']['merchants_id'];
+
+        if($transaction) {
+            if($merchants === 1){
+                //Store the image and update the transaction
+                $imagePath = $request->file('image')->store('transaction/warmingup');
+                $transaction->payment_image = $imagePath;
+                $transaction->save(); 
+                return ResponseFormatter::success($transaction, 'Image uploaded successfully.');           
+            }
+            if($merchants === 2){
+                //Store the image and update the transaction
+                $imagePath = $request->file('image')->store('transaction/kortail');
+                $transaction->payment_image = $imagePath;
+                $transaction->save();  
+                return ResponseFormatter::success($transaction, 'Image uploaded successfully.');          
+            }
+            if($merchants === 3){
+                //Store the image and update the transaction
+                $imagePath = $request->file('image')->store('transaction/kortail');
+                $transaction->payment_image = $imagePath;
+                $transaction->save();
+                return ResponseFormatter::success($transaction, 'Image uploaded successfully.');            
+            }else{
+                // Store the image and update the transaction
+                $imagePath = $request->file('image')->store('transaction');
+                $transaction->payment_image = $imagePath;
+                $transaction->save();
+                return ResponseFormatter::success($transaction, 'Image uploaded successfully.');
+            }    
+        }else{
+            return ResponseFormatter::error(null, 'Transaction Not Found.');
+        }
+
+    }
+    
 }
