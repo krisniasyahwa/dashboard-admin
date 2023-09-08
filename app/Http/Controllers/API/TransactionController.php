@@ -24,74 +24,29 @@ class TransactionController extends Controller
      * @return \Illuminate\Http\JsonResponse
      */
 
-    public function index(Request $request)
-    {
+
+    public function index(Request $request){
         $user = Auth::user()->id;
-        $id = $request->input('id');
-        $limit = $request->input('limit', 6);
-        $status = $request->input('status');
-        $merchants = $request->input('merchants');
+        try{
 
-        try {
-            //Filtering data transaction by id
-            if ($id) {
-                $transaction = Transaction::with(['user', 'items.product'])->where('users_id', $user)->find($id);
-                if ($transaction)
-                    return ResponseFormatter::success(
-                        $transaction,
-                        'Data transaksi dengan id transaksi ' . $id . ' berhasil diambil'
-                    );
-                else
-                    return ResponseFormatter::error(
-                        null,
-                        'Data transaksi dengan id transaksi ' . $id . ' tidak ditemukan',
-                        404.
-                    );
-            }
-            //filtering data transaction by status
-            if ($status) {
-                $transaction = Transaction::with(['items.product'])->where('users_id', $user)->where('status', $status);
-                if ($transaction)
-                    return ResponseFormatter::success(
-                        $transaction,
-                        'Data transaksi dengan status transaksi ' . $status . ' berhasil diambil'
-                    );
-                else
-                    return ResponseFormatter::error(
-                        null,
-                        'Data transaksi dengan status transaksi ' . $status . ' tidak ditemukan',
-                        404.
-                    );
+            $unpaidTransactions = Transaction::with('items.product')->where('users_id', $user)->where('status_payment', 'UNPAID')->orderBy('created_at', 'desc')->get();
+            $paidTransactions = Transaction::with('items.product')->where('users_id', $user)->where('status_payment', 'PAID')->orderBy('created_at', 'desc')->get();
+            if($unpaidTransactions->isEmpty() && $paidTransactions->isEmpty()){
+                return ResponseFormatter::error(null, 'Transactions Not Found', 400);
+            }elseif($paidTransactions->isNotEmpty()){
+                if($unpaidTransactions->isNotEmpty()){
+                    $transactions = $unpaidTransactions->concat($paidTransactions);
+                    return ResponseFormatter::success($transactions, 'Success');
+                }else{
+                    $transactions = $paidTransactions;
+                    return ResponseFormatter::success($transactions, 'Success');
+                }
+            }else{
+                $transactions = $unpaidTransactions;
+                return ResponseFormatter::success($transactions, 'success');
             }
 
-            if ($merchants) {
-                $transaction = Transaction::with(['items.product.merchant'])->where('users_id', $user)->where('items.product.merchant.merchants_id', $merchants);
-                if ($transaction)
-                    return ResponseFormatter::success(
-                        $transaction,
-                        'Transaksi dengan id transaksi ' . $user . ' untuk merchant ' . $merchants . ' berhasil diambil'
-                    );
-                else
-                    return ResponseFormatter::error(
-                        null,
-                        'Transaksi untuk merchant' . $merchants . 'tidak ditemukan',
-                        404.
-                    );
-            }
-
-
-            //Get all data transaction by user loged
-            $transaction = Transaction::with(['items.product'])->where('users_id', $user);
-            if ($transaction->count() == 0) {
-                return ResponseFormatter::error(
-                    null,
-                    'Data transaksi tidak ditemukan',
-                    404
-                );
-            } else {
-                return ResponseFormatter::success($transaction->paginate($limit), 'Data list transaksi berhasil diambil');
-            }
-        } catch (\Throwable $th) {
+        }catch (\Throwable $th){
             return ResponseFormatter::error($th, 'Something Happen', 500);
         }
     }
@@ -265,19 +220,7 @@ class TransactionController extends Controller
         return ResponseFormatter::success($transaction, "success");
     }
 
-    // public function confirmpayment(ImageStoreRequest $request){
-    //     $user = Auth::user()->id;
-    //     $validatedData = $request->validated();
-    //     $transaction = Transaction::where('users_id', $user)->pluck('id')->first();
-    //     $imagepath = $request->file('image')->store('image/transaction');
-    //     // $transaction = Transaction::create([
-    //     //     'users_id' => $user,
-    //     //     'image' => $validatedData['image']
-    //     // ]);
-    //     $transaction->image = $imagepath;
-    //     $transaction->save();
-    //     return ResponseFormatter::success($transaction, 'Success');
-    // }
+    
     public function confirmpayment(ImageStoreRequest $request){
         $user = Auth::user();
         $request->validated();
