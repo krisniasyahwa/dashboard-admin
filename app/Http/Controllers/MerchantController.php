@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Merchant;
 use Illuminate\Support\Str;
 use App\Http\Requests\MerchantRequest;
-use App\Models\Merchant;
+use Illuminate\Support\Facades\Storage;
 use Yajra\DataTables\Facades\DataTables;
 
 class MerchantController extends Controller
@@ -22,7 +23,7 @@ class MerchantController extends Controller
             $data = DataTables::of($query)
                 ->addColumn('action', function ($item) {
                     return '
-                        <a class="inline-block border border-gray-700 bg-gray-700 text-white rounded-md px-2 py-1 m-1 transition duration-500 ease select-none hover:bg-gray-800 focus:outline-none focus:shadow-outline" 
+                        <a class="inline-block border border-gray-700 bg-gray-700 text-white rounded-md px-2 py-1 m-1 transition duration-500 ease select-none hover:bg-gray-800 focus:outline-none focus:shadow-outline"
                             href="' . route('dashboard.merchant.edit', $item->id) . '">
                             Edit
                         </a>
@@ -72,6 +73,11 @@ class MerchantController extends Controller
             $data['profile_photo_path'] = $profile_photo_path->store('public/merchant');;
         }
 
+        $qris_path = $request->file('qris_path');
+
+        if ($request->hasFile('qris_path')) {
+            $data['qris_path'] = $qris_path->store('public/merchant');;
+        }
         Merchant::create($data);
 
         return redirect()->route('dashboard.merchant.index');
@@ -117,6 +123,12 @@ class MerchantController extends Controller
             $data['profile_photo_path'] = $profile_photo_path->store('public/merchant');;
         }
 
+        $qris_path = $request->file('qris_path');
+        if ($request->hasFile('qris_path')) {
+            $data['qris_path'] = $qris_path->store('public/merchant');;
+        }
+
+        // return $data;
         $merchant->update($data);
 
         return redirect()->route('dashboard.merchant.index');
