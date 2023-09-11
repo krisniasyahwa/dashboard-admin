@@ -120,6 +120,50 @@
                 if (!results[2]) return '';
                 return decodeURIComponent(results[2].replace(/\+/g, " "));
             }
+            function handleImageUpload(inputId, previewId) {
+                // Get references to the input and img elements
+                const inputElement = document.getElementById(inputId);
+                const previewElement = document.getElementById(previewId);
+                const defaultSrc = previewElement.src
+                let objectURL = null; // Initialize objectURL
+
+                // Add an event listener to the input element
+                inputElement.addEventListener('change', (event) => {
+                    // Check if a file has been selected
+                    if (event.target.files.length > 0) {
+                    // Get the selected file
+                    const selectedFile = event.target.files[0];
+
+                    // Create a FileReader to read the file
+                    const reader = new FileReader();
+
+                    // Set up a function to run when the FileReader has loaded the file
+                    reader.onload = (e) => {
+                        // Revoke the previous object URL if it exists
+                        if (objectURL) {
+                        URL.revokeObjectURL(objectURL);
+                        }
+
+                        // Update the src attribute of the img element with the selected image data
+                        previewElement.src = e.target.result;
+
+                        // Create a new object URL for the selected file
+                        objectURL = URL.createObjectURL(selectedFile);
+                    };
+
+                    // Read the selected file as a data URL
+                    reader.readAsDataURL(selectedFile);
+                    } else {
+                    // No file selected, return the default img
+                    previewElement.src = defaultSrc
+
+                    if (objectURL) {
+                        URL.revokeObjectURL(objectURL);
+                        objectURL = null; // Reset objectURL
+                    }
+                    }
+                });
+                }
         </script>
     </head>
     <body class="font-sans antialiased">
