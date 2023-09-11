@@ -142,6 +142,17 @@ class MerchantController extends Controller
      */
     public function destroy(Merchant $merchant)
     {
+        // Delete the profile photo
+        if (!empty($merchant->profile_photo_path)) {
+            Storage::delete($merchant->profile_photo_path);
+        }
+
+        // Delete the qris image
+        if (!empty($merchant->qris_path)) {
+            Storage::delete($merchant->qris_path);
+        }
+
+        // Delete the merchant record from the database
         $merchant->delete();
 
         return redirect()->route('dashboard.merchant.index');
