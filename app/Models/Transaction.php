@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Carbon;
 
 class Transaction extends Model
@@ -12,15 +13,7 @@ class Transaction extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'users_id',
-        'address',
-        'payment',
-        'total_price',
-        'shipping_price',
-        'status',
-        'point_usage',
-        'status_payment',
-        'image'
+        'users_id', 'address', 'payment', 'total_price', 'shipping_price', 'takeaway_charge', 'status', 'point_usage', 'status_payment', 'payment_image'
     ];
     //Create relationship with Users table->One to Many->users_id as foreign key
     public function user()
@@ -33,18 +26,8 @@ class Transaction extends Model
         return $this->hasMany(TransactionItem::class, 'transactions_id', 'id');
     }
 
-    public function scopeToday($query){
-        return $query->whereDate('created_at', Carbon::today());
-    }
-
-    public function scopeYesterday($query){
-        return $query->whereDate('created_at', Carbon::yesterday());
-    }
-
-    public function scopeLastMonth($query){
-        return $query->whereBetween('created_at', [
-            Carbon::now()->subMonth()->startOfMonth(),
-            Carbon::now()->subMonth()->endOfMonth()
-        ]);
+    public function getImagePaymentConfirmation($path){
+        if($path ==  null) return null;
+        return config('app.url').Storage::url($path);
     }
 }
