@@ -34,4 +34,17 @@ class MerchantRequest extends FormRequest
             'qris_path' => 'nullable|image',
         ];
     }
+
+     /**
+     * Get the error messages for the defined validation rules.
+     *
+     * @return array
+     */
+    public function messages()
+    {
+        return [
+            // Add custom error messages if needed.
+        ];
+    }
 }
+
