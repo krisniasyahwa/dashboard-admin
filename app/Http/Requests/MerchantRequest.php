@@ -28,7 +28,10 @@ class MerchantRequest extends FormRequest
             'name' => 'required|max:255',
             'address' => 'required',
             'phone' => 'required|string',
+            'slug' => 'required|max:255',
             'profile_photo_path' => 'nullable|image',
+            'concurrent_transaction' => 'required|integer|max:999|min:0',
+            'qris_path' => 'nullable|image',
         ];
     }
 }
