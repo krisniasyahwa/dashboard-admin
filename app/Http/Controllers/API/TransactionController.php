@@ -26,28 +26,28 @@ class TransactionController extends Controller
      */
 
 
-    public function index(Request $request){
+    public function index(Request $request)
+    {
         $user = Auth::user()->id;
-        try{
+        try {
 
             $unpaidTransactions = Transaction::with('items.product')->where('users_id', $user)->where('status_payment', 'UNPAID')->orderBy('created_at', 'desc')->get();
             $paidTransactions = Transaction::with('items.product')->where('users_id', $user)->where('status_payment', 'PAID')->orderBy('created_at', 'desc')->get();
-            if($unpaidTransactions->isEmpty() && $paidTransactions->isEmpty()){
+            if ($unpaidTransactions->isEmpty() && $paidTransactions->isEmpty()) {
                 return ResponseFormatter::error(null, 'Transactions Not Found', 400);
-            }elseif($paidTransactions->isNotEmpty()){
-                if($unpaidTransactions->isNotEmpty()){
+            } elseif ($paidTransactions->isNotEmpty()) {
+                if ($unpaidTransactions->isNotEmpty()) {
                     $transactions = $unpaidTransactions->concat($paidTransactions);
                     return ResponseFormatter::success($transactions, 'Success');
-                }else{
+                } else {
                     $transactions = $paidTransactions;
                     return ResponseFormatter::success($transactions, 'Success');
                 }
-            }else{
+            } else {
                 $transactions = $unpaidTransactions;
                 return ResponseFormatter::success($transactions, 'success');
             }
-
-        }catch (\Throwable $th){
+        } catch (\Throwable $th) {
             return ResponseFormatter::error($th, 'Something Happen', 500);
         }
     }
@@ -75,14 +75,13 @@ class TransactionController extends Controller
             'items.*.note' => 'nullable',
         ]);
 
-        try{
+        try {
             if (!$this->validatecart($request->items)) {
                 return response()->json([
                     'message' => 'Checkout failed',
                     'data' => 'Item from different merchant'
                 ]);
-            } 
-            else {
+            } else {
                 $transaction = Transaction::create([
                     'users_id' => $user,
                     'address' => $request->address,
@@ -92,9 +91,9 @@ class TransactionController extends Controller
                     'point_usage' => $request->point_usage,
                     'payment_type' => $request->payment_type,
                 ]);
-    
+
                 foreach ($request->items as $product) {
-    
+
                     TransactionItem::create([
                         'users_id' => $user,
                         'products_id' => $product['id'],
@@ -105,12 +104,9 @@ class TransactionController extends Controller
                 }
                 return ResponseFormatter::success($transaction->load('items.product'), 'Data list transaksi berhasil diambil');
             }
-        }catch(\Throwable $th){
+        } catch (\Throwable $th) {
             return ResponseFormatter::error($th, 'Something Happen', 500);
         }
-
-
-        
     }
 
 
@@ -215,11 +211,12 @@ class TransactionController extends Controller
         }
     }
 
-    public function payments(Request $request){
+    public function payments(Request $request)
+    {
         $user = Auth::user()->id;
         $request->validate([
             'total_price' => 'required',
-            'payment' => 'required|in:QRIS,MANUAL,CASH', 
+            'payment' => 'required|in:QRIS,MANUAL,CASH',
         ]);
         $transaction = Transaction::where('users_id', $user)->orderBy('created_at', 'desc')->first();
         //Update totalprice and payment method
@@ -229,49 +226,18 @@ class TransactionController extends Controller
         return ResponseFormatter::success($transaction, "success");
     }
 
-    
-    public function confirmpayment(ImageStoreRequest $request){
+
+    public function confirmpayment(ImageStoreRequest $request, Transaction $transaction)
+    {
         $user = Auth::user();
         $request->validated();
-        
+        $paymentImage = $request->file('payment_image');
         // Find the user's latest transaction
         $transaction = Transaction::with('items.product.merchant')->where('users_id', $user->id)->latest()->first();
-        $merchants = $transaction['items'][0]['product']['merchants_id'];
-
-        try{
-            if($transaction) {
-                if($merchants === 1){
-                    //Store the image and update the transaction
-                    $imagePath = $request->file('image')->store('public/transaction/warmingup');
-                    $transaction->payment_image = $imagePath;
-                    $transaction->save(); 
-                    return ResponseFormatter::success($transaction, 'Image uploaded successfully.');           
-                }
-                if($merchants === 2){
-                    //Store the image and update the transaction
-                    $imagePath = $request->file('image')->store('public/transaction/kortail');
-                    $transaction->payment_image = $imagePath;
-                    $transaction->save();  
-                    return ResponseFormatter::success($transaction, 'Image uploaded successfully.');          
-                }
-                if($merchants === 3){
-                    //Store the image and update the transaction
-                    $imagePath = $request->file('image')->store('public/transaction/kortail');
-                    $transaction->payment_image = $imagePath;
-                    $transaction->save();
-                    return ResponseFormatter::success($transaction, 'Image uploaded successfully.');            
-                }else{
-                    // Store the image and update the transaction
-                    $imagePath = $request->file('image')->store('public/transaction');
-                    $transaction->payment_image = $imagePath;
-                    $transaction->save();
-                    return ResponseFormatter::success($transaction, 'Image uploaded successfully.');
-                }    
-            }else{
-                return ResponseFormatter::error(null, 'Transaction Not Found.');
-            }
-        } catch (\Throwable $th){ return ResponseFormatter::error($th, "Something Happen", 500);}
-
+        if ($request->hasFile('payment_image')) {
+            $transaction->payment_image = $paymentImage->store('public/transactions');
+            $transaction->save();
+            return ResponseFormatter::success($transaction, 'success');
+        };
     }
-    
 }
