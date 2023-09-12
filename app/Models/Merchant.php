@@ -12,7 +12,7 @@ class Merchant extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'name', 'slug', 'address', 'phone', 'profile_photo_path'
+        'name', 'slug', 'address', 'phone', 'profile_photo_path','qris_path','concurrent_transaction'
     ];
 
     public function products()
@@ -26,6 +26,13 @@ class Merchant extends Model
     }
 
     public function getProfilePhotoPathAttribute($path)
+    {
+        if ($path == null) return null;
+
+        return config('app.url') . Storage::url($path);
+    }
+
+    public function getQrisPathAttribute($path)
     {
         if ($path == null) return null;
 

@@ -31,7 +31,7 @@
                             <label class="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2" for="grid-last-name">
                                 Name
                             </label>
-                            <input value="{{ old('name') }}" name="name" class="appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500" id="grid-last-name" type="text" placeholder="Product Name">
+                            <input value="{{ old('name')}}" name="name" class="appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500" id="grid-last-name" type="text" placeholder="Product Name">
                         </div>
                     </div>
                     <div class="flex flex-wrap -mx-3 mb-6">
@@ -49,7 +49,7 @@
                             </label>
                             <select name="merchants_id" class="appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500" id="grid-last-name">
                                 @foreach ($merchants as $merchant)
-                                    <option value="{{ $merchant->id }}">{{ $merchant->name }}</option>
+                                    <option {{ old('merchants_id') == $merchant->id ? 'selected' : '' }} value="{{ $merchant->id }}">{{ $merchant->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -61,7 +61,7 @@
                             </label>
                             <select name="categories_id" class="appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500" id="grid-last-name">
                                 @foreach ($categories as $category)
-                                    <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                    <option {{ old('categories_id') == $category->id ? 'selected' : '' }} value="{{ $category->id }}">{{ $category->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -77,30 +77,53 @@
                     <div class="flex flex-wrap -mx-3 mb-6">
                         <div class="w-full px-3">
                             <label class="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2" for="grid-last-name">
-                                Price
+                                Stock
                             </label>
-                            <input value="{{ old('price') }}" name="price" class="appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500" id="grid-last-name" type="number" placeholder="Product Price">
+                            <input value={{old('Stock') ?? 0}} name="stock" class="appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500" id="grid-last-name" type="number" placeholder="Product Stock">
                         </div>
                     </div>
                     <div class="flex flex-wrap -mx-3 mb-6">
                         <div class="w-full px-3">
                             <label class="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2" for="grid-last-name">
-                                FAVORITE
+                                Price
+                            </label>
+                            <input value={{old('price') ?? 0}} name="price" class="appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500" id="grid-last-name" type="number" placeholder="Product Price">
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap -mx-3 mb-6">
+                        <div class="w-full px-3">
+                            <label class="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2" for="grid-last-name">
+                                promo_price
+                            </label>
+                            <input value={{old('promo_price')?? 0}} name="promo_price" class="appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500" id="grid-last-name" type="number" placeholder="Product Promo Price">
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap -mx-3 mb-6">
+                        <div class="w-full px-3">
+                            <label class="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2" for="grid-last-name">
+                                takeway_charge
+                            </label>
+                            <input value={{old('takeway_charge')?? 0}}  name="takeway_charge" class="appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500" id="grid-last-name" type="number" placeholder="Takeaway charge for packaging">
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap -mx-3 mb-6">
+                        <div class="w-full px-3">
+                            <label class="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2" for="grid-last-name">
+                                best_seller
                             </label>
 
                             <div class="mt-2">
                                 <label class="inline-flex items-center">
-                                    <input type="radio" class="form-radio" name="favorite" value="1">
+                                    <input type="radio" class="form-radio" {{ old('best_seller') ? old('best_seller') == 1 ? 'checked' : '' : ''}} name="best_seller" value="1">
                                     <span class="ml-2">Yes</span>
                                 </label>
                                 <label class="inline-flex items-center ml-6">
-                                    <input type="radio" class="form-radio" checked name="favorite" value="0">
+                                    <input type="radio" class="form-radio" {{ old('best_seller') ? old('best_seller') == 0 ? 'checked' : '' : 'checked'}} name="best_seller" value="0">
                                     <span class="ml-2">No</span>
                                 </label>
                             </div>
                         </div>
                     </div>
-                    
                     <div class="flex flex-wrap -mx-3 mb-6 mt-4 justify-end">
                         <div class="w-full px-3 text-right">
                             <button type="submit" class=" shadow-lg bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">

@@ -11,7 +11,16 @@ class Product extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'name', 'description', 'price', 'categories_id', 'tags', 'favorite', 'merchants_id', 'best_seller', 'takeway_charge'
+        'name',
+        'description',
+        'price',
+        'categories_id',
+        'tags', 'favorite',
+        'merchants_id',
+        'best_seller',
+        'takeway_charge',
+        'promo_price',
+        'stock'
     ];
     //Create relationship with ProductGallery table->one to many->products_id as foregin key
     public function galleries()

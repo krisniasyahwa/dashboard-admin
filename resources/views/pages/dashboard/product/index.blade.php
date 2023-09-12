@@ -15,7 +15,11 @@
                 columns: [
                     { data: 'id', name: 'id', width: '5%'},
                     { data: 'name', name: 'name' },
+                    { data: 'stock', name: 'stock' },
                     { data: 'price', name: 'price' },
+                    { data: 'promo_price', name: 'promo_price' },
+                    { data: 'takeway_charge', name: 'takeway_charge' },
+                    { data: 'best_seller', name: 'best_seller' },
                     { data: 'category.name', name: 'category.name' },
                     { data: 'merchant.name', name: 'merchant.name' },
                     {
@@ -23,10 +27,14 @@
                         name: 'action',
                         orderable: false,
                         searchable: false,
-                        width: '30%'
+                        width: '25%'
                     },
                 ],
             });
+
+            // enable searching feature from search params url
+            var searchValue = getParameterByName('search') != null ? getParameterByName('search') : "";
+            datatable.search(searchValue).draw();
         </script>
     </x-slot>
 
@@ -44,7 +52,11 @@
                         <tr>
                             <th>ID</th>
                             <th>Nama</th>
+                            <th>Stock</th>
                             <th>Harga</th>
+                            <th>Promo</th>
+                            <th>Takeway</th>
+                            <th>Best Seller</th>
                             <th>Kategori</th>
                             <th>Merchant</th>
                             <th>Aksi</th>
