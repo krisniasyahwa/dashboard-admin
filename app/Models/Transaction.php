@@ -26,7 +26,7 @@ class Transaction extends Model
         return $this->hasMany(TransactionItem::class, 'transactions_id', 'id');
     }
 
-    public function getImagePaymentConfirmation($path){
+    public function getPaymentImageAttribute($path){
         if($path ==  null) return null;
         return config('app.url').Storage::url($path);
     }
