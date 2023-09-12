@@ -26,7 +26,8 @@ class TransactionRequest extends FormRequest
     {
         return [
             'status' => 'in:PENDING,PROCESS,READY,SUCCESS',
-            'status_payment' => 'in:UNPAID,REVIEW,PAID,REJECTED,EXPIRED'
+            'status_payment' => 'in:UNPAID,REVIEW,PAID,REJECTED,EXPIRED',
+            'payment_image' => 'nullable|image'
         ];
     }
 }
