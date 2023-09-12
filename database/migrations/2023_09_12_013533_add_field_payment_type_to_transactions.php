@@ -14,7 +14,7 @@ class AddFieldPaymentTypeToTransactions extends Migration
     public function up()
     {
         Schema::table('transactions', function (Blueprint $table) {
-            $table->string('payment_type')->after('payment')->default('bayarSekarang');
+            $table->string('payment_type')->after('payment')->default('bayar_sekarang');
             //
         });
     }

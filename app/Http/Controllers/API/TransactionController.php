@@ -68,6 +68,7 @@ class TransactionController extends Controller
             'status' => 'required|in:PENDING, SUCCESS, CANCELLED, FAILED, SHIPPING, SHIPPED',
             'payment' => 'required|in:QRIS,MANUAL',
             'point_usage' => 'required|min:0',
+            'payment_type' => 'required|in:bayar_sekarang,bayar_nanti',
             'items' => 'required|array',
             'items.*.id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|min:1',
@@ -89,6 +90,7 @@ class TransactionController extends Controller
                     'status' => $request->status,
                     'payment' => $request->payment,
                     'point_usage' => $request->point_usage,
+                    'payment_type' => $request->payment_type,
                 ]);
     
                 foreach ($request->items as $product) {
