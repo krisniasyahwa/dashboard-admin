@@ -53,12 +53,41 @@
                         </div>
                     </div>
 
+
+                    <div class="flex flex-wrap -mx-3 mb-6">
+                        <div class="w-full px-3">
+                            <label class="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2" for="grid-last-name">
+                                Slug
+                            </label>
+                            <input value="{{ old('slug') }}" name="slug" class="appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500" id="grid-last-name" type="text" placeholder="Merchant SLUG">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap -mx-3 mb-6">
+                        <div class="w-full px-3">
+                            <label class="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2" for="grid-last-name">
+                                Concurrent Transaction
+                            </label>
+                            <input value="{{ old('concurrent_transaction') }}" name="concurrent_transaction" class="appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500" id="grid-last-name" type="text" placeholder="Merchant Concurrent Transaction">
+                        </div>
+                    </div>
                     <div class="flex flex-wrap -mx-3 mb-6">
                         <div class="w-full px-3">
                             <label class="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2" for="grid-last-name">
                                 Photo Profile
                             </label>
-                            <input accept="image/*" value="{{ old('profile_photo_path') }}" name="profile_photo_path" class="appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500" id="grid-last-name" type="file" placeholder="Merchant Photo Profile">
+                            <img id="profile-photo-preview" src="{{old('profile_photo_path') ?? 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Empty_set_symbol.svg/640px-Empty_set_symbol.svg.png'}}" class="rounded-full w-40 h-40 mb-4"/>
+                            <input id="profile-photo-input" accept="image/*" value="{{ old('profile_photo_path') }}" name="profile_photo_path" class="appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500" id="grid-last-name" type="file" placeholder="Merchant Photo Profile">
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap -mx-3 mb-6">
+                        <div class="w-full px-3">
+                            <label class="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2" for="grid-last-name">
+                                QRIS
+                            </label>
+                            <img id="qris-preview" src="{{old('qris_path') ?? 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Empty_set_symbol.svg/640px-Empty_set_symbol.svg.png'}}" class="w-60 mb-4"/>
+                            <input id="qris-input" accept="image/*" value="{{ old('qris_path') }}" name="qris_path" class="appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:bg-white focus:border-gray-500" id="grid-last-name" type="file" placeholder="Merchant QRIS">
                         </div>
                     </div>
 
@@ -73,4 +102,11 @@
             </div>
         </div>
     </div>-
+    <x-slot name="script">
+        <script>
+             // Use the function for profile photo and QRIS uploads
+            handleImageUpload('profile-photo-input', 'profile-photo-preview',);
+            handleImageUpload('qris-input', 'qris-preview');
+        </script>
+    </x-slot>
 </x-app-layout>

@@ -18,14 +18,20 @@
                         return data != null ? '<img src="'+data+'" class="rounded-full w-20 h-20"/>' : null;
                     }},
                     { data: 'name', name: 'name' },
+                    { data: 'slug', name: 'slug' },
                     { data: 'address', name: 'address' },
                     { data: 'phone', name: 'phone' },
+                    { data: 'concurrent_transaction', name: 'concurrent_transaction' },
+                    { data: 'qris_path', name: 'qris_path', render: function (data) {
+                        return data != null ? '<img src="'+data+'" class="h-full"/>' : null;
+                    }},
+
                     {
                         data: 'action',
                         name: 'action',
                         orderable: false,
                         searchable: false,
-                        width: '25%',
+                        width: '15%',
                     },
                 ],
             });
@@ -46,9 +52,12 @@
                         <tr>
                             <th>ID</th>
                             <th>Photo</th>
+                            <th>Slug</th>
                             <th>Nama</th>
                             <th>Address</th>
                             <th>Phone</th>
+                            <th style="width: 8%">concurrent transaction</th>
+                            <th style="width: 10%">qris_path</th>
                             <th>Aksi</th>
                         </tr>
                         </thead>
