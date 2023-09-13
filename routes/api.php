@@ -31,7 +31,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('transactions/detailtransactions/payments', [TransactionController::class, 'payments']);
     Route::post('transactions/checkout', [TransactionController::class, 'checkout']);
     Route::post('transactions/confirmation', [TransactionController::class, 'confirmpayment']);
-    Route::post('checkout/validation', [TransactionController::class, 'checkoutValidation']); 
+    Route::post('transactions/validation', [TransactionController::class, 'validation']);
 
     Route::post('merchants', [MerchantController::class, 'store']);
     Route::delete('merchants/{slug}', [MerchantController::class, 'destroy']);
