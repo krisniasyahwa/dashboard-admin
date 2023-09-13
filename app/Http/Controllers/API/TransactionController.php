@@ -75,13 +75,6 @@ class TransactionController extends Controller
             'items.*.note' => 'nullable',
         ]);
 
-        try {
-            if (!$this->validatecart($request->items)) {
-                return response()->json([
-                    'message' => 'Checkout failed',
-                    'data' => 'Item from different merchant'
-                ]);
-            } else {
                 $transaction = Transaction::create([
                     'users_id' => $user,
                     'address' => $request->address,
@@ -103,10 +96,6 @@ class TransactionController extends Controller
                     ]);
                 }
                 return ResponseFormatter::success($transaction->load('items.product'), 'Data list transaksi berhasil diambil');
-            }
-        } catch (\Throwable $th) {
-            return ResponseFormatter::error($th, 'Something Happen', 500);
-        }
     }
 
 
