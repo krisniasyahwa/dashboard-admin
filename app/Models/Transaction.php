@@ -13,7 +13,7 @@ class Transaction extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'users_id', 'address', 'payment', 'total_price', 'shipping_price', 'takeaway_charge', 'status', 'point_usage', 'status_payment', 'payment_image'
+        'users_id', 'address', 'payment', 'total_price', 'shipping_price', 'takeaway_charge', 'status', 'point_usage', 'status_payment', 'payment_image', 'payment_type'
     ];
     //Create relationship with Users table->One to Many->users_id as foreign key
     public function user()
@@ -26,7 +26,7 @@ class Transaction extends Model
         return $this->hasMany(TransactionItem::class, 'transactions_id', 'id');
     }
 
-    public function getImagePaymentConfirmation($path){
+    public function getPaymentImageAttribute($path){
         if($path ==  null) return null;
         return config('app.url').Storage::url($path);
     }
