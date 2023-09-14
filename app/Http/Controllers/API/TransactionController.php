@@ -235,15 +235,14 @@ class TransactionController extends Controller
 
             $items = $request->items;
             $idItems = array_column($items, 'id'); // Extract all product IDs
-
-
             $merchantId = Product::whereIn('id', $idItems)->pluck('merchants_id');
-
             $merchants = Merchant::whereIn('id', $merchantId)->get();
-
             $products = Product::whereIn('id', $idItems)->get();
+            $transaction = $request->transaction_type;
 
-            // Organize merchant and product data
+
+
+            // Organize merchant data
             $merchantData = $merchants->map(function ($merchants) {
                  return [
                      'id' => $merchants->id,
@@ -251,7 +250,7 @@ class TransactionController extends Controller
                      'address' => $merchants->address,
                  ];
              });
-
+             //Organisze Product Data
             $productData = $products->map(function ($product) use ($items) {
                 $item = collect($items)->first(function ($item) use ($product) {
                     return $item['id'] == $product->id;
@@ -265,10 +264,46 @@ class TransactionController extends Controller
                     'promo_price' => $product->promo_price,
                 ];
             });
+            //Organize Transaction Summary Data
+            if($transaction === 'dine_in'){
+                $subtotal = 0;
+                foreach ($productData as $product){
+                    $quantity = $product['quantity'];
+                    $price = $product['price'];
+                    $calculation = $quantity * $price;
+                    $subtotal += $calculation;
+                    
+                }
+
+                $summaryData = [
+                    'subtotal' => $subtotal,
+                    'takeaway_price' => 0,
+                    'admin_fee' => 0,
+                    'total' => $subtotal
+                ];
+            }else{
+                $subtotal = 0;
+                $takeaway_charge = 2000;
+                foreach ($productData as $product){
+                    $quantity = $product['quantity'];
+                    $price = $product['price'];
+                    $calculation = $quantity * $price ;
+                    $subtotal += $calculation;
+                }
+                $summaryData = [
+                    'subtotal' => $subtotal,
+                    'takeaway_charge' => $takeaway_charge,
+                    'admin_fee' => 0,
+                    'total' => $subtotal + $takeaway_charge
+                ];
+            }
+ 
 
             $result = [
                 'merchant' => $merchantData,
                 'items' => $productData,
+                'Summary' => $summaryData,
+
             ];
 
             return ResponseFormatter::success($result, 'Transactions Validated');
