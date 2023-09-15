@@ -8,6 +8,7 @@ use App\Models\Transaction;
 use App\Models\TransactionItem;
 use App\Models\User;
 use App\Models\Product;
+use App\Models\Merchant;
 use App\Traits\FilterByDate;
 use App\Http\Requests\ImageStoreRequest;
 use App\Models\Cart;
@@ -16,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Carbon;
+use Symfony\Component\HttpFoundation\Test\Constraint\ResponseFormatSame;
 
 class TransactionController extends Controller
 {
@@ -75,38 +77,27 @@ class TransactionController extends Controller
             'items.*.note' => 'nullable',
         ]);
 
-        try {
-            if (!$this->validatecart($request->items)) {
-                return response()->json([
-                    'message' => 'Checkout failed',
-                    'data' => 'Item from different merchant'
-                ]);
-            } else {
-                $transaction = Transaction::create([
-                    'users_id' => $user,
-                    'address' => $request->address,
-                    'total_price' => $request->total_price,
-                    'status' => $request->status,
-                    'payment' => $request->payment,
-                    'point_usage' => $request->point_usage,
-                    'payment_type' => $request->payment_type,
-                ]);
+        $transaction = Transaction::create([
+            'users_id' => $user,
+            'address' => $request->address,
+            'total_price' => $request->total_price,
+            'status' => $request->status,
+            'payment' => $request->payment,
+            'point_usage' => $request->point_usage,
+            'payment_type' => $request->payment_type,
+        ]);
 
-                foreach ($request->items as $product) {
+        foreach ($request->items as $product) {
 
-                    TransactionItem::create([
-                        'users_id' => $user,
-                        'products_id' => $product['id'],
-                        'transactions_id' => $transaction->id,
-                        'quantity' => $product['quantity'],
-                        'note' => $product['note'],
-                    ]);
-                }
-                return ResponseFormatter::success($transaction->load('items.product'), 'Data list transaksi berhasil diambil');
-            }
-        } catch (\Throwable $th) {
-            return ResponseFormatter::error($th, 'Something Happen', 500);
+            TransactionItem::create([
+                'users_id' => $user,
+                'products_id' => $product['id'],
+                'transactions_id' => $transaction->id,
+                'quantity' => $product['quantity'],
+                'note' => $product['note'],
+            ]);
         }
+        return ResponseFormatter::success($transaction->load('items.product'), 'Data list transaksi berhasil diambil');
     }
 
 
@@ -155,8 +146,6 @@ class TransactionController extends Controller
         return true; //If all item have same merchant_id return true
     }
 
-
-
     public function validationusergroups($user)
     {
 
@@ -186,46 +175,146 @@ class TransactionController extends Controller
         return $product;
     }
 
+    // public function validation(Request $request){
+    //     $user = Auth::user()->id;
+    //     try{
+    //         $request->validate([
+    //             'transaction_type' => 'required|in:dine_in,takeaway',
+    //             'items' => 'required|array',
+    //             'items.*.id' => 'required|exists:products,id',
+    //             'items.*.quantity' => 'required|min:1',
+    //             'items.*.note' => 'nullable'
+    //         ]);
 
-    public function detailtransaction()
+    //         $items = $request->items;
+    //         $iditems = $items[0]['id'];
+    //         $detailproduct = Product::where('id', $iditems)->get();
+    //         $merchantId = $detailproduct[0]['merchants_id'];
+    //         $merchant = Merchant::where('id', $merchantId)->get();
+
+    //         $products = [];
+    //         foreach($request->items as $item){
+    //             // $transaction = [
+    //             //     'id' => $item['id'],
+    //             //     'quantity' => $item['quantity'],
+    //             //     'note' => $item['quantity'],
+
+    //             // ];
+    //             $product = Product::where('id', $item['id'])->get();
+    //             $products[] = $product;
+    //         }
+
+
+
+    //         $result = [
+    //             'merchant' => $merchant,
+    //             'items' => $products
+    //         ];
+
+
+    //         return ResponseFormatter::success($result, 'Transactions Validated');
+    //     } catch (Exception $error){
+    //         return ResponseFormatter::error([
+    //             'message' => 'Something Happen',
+    //             'error' => $error,
+    //             'code' => 500
+    //         ]);
+    //     }
+
+    // }
+    public function validation(Request $request)
     {
-        $user = Auth::user()->id;
         try {
-            if ($user) {
+            $request->validate([
+                'transaction_type' => 'required|in:dine_in,takeaway',
+                'items' => 'required|array',
+                'items.*.id' => 'required|exists:products,id',
+                'items.*.quantity' => 'required|min:1',
+                'items.*.note' => 'nullable'
+            ]);
 
-                $transaction = Transaction::with('items.product', 'items.product.merchant')->where('users_id', $user)->orderBy('created_at', 'desc')->first();
-                return ResponseFormatter::success($transaction, 'Data transaksi dapat ditemukan');
-            } else {
-                return ResponseFormatter::error(null, 'Data Transaksi Tidak Ditemukan', 400);
+            $items = $request->items;
+            $idItems = array_column($items, 'id'); // Extract all product IDs
+            $merchantId = Product::whereIn('id', $idItems)->pluck('merchants_id');
+            $merchants = Merchant::whereIn('id', $merchantId)->get();
+            $products = Product::whereIn('id', $idItems)->get();
+            $transaction = $request->transaction_type;
+
+
+
+            // Organize merchant data
+            $merchantData = $merchants->map(function ($merchants) {
+                 return [
+                     'id' => $merchants->id,
+                     'name' => $merchants->name,
+                     'address' => $merchants->address,
+                 ];
+             });
+             //Organisze Product Data
+            $productData = $products->map(function ($product) use ($items) {
+                $item = collect($items)->first(function ($item) use ($product) {
+                    return $item['id'] == $product->id;
+                });
+                $quantity = isset($item['quantity']) ? $item['quantity'] : 0;
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'quantity' => $quantity,
+                    'price' => $product->price,
+                    'promo_price' => $product->promo_price,
+                ];
+            });
+            //Organize Transaction Summary Data
+            if($transaction === 'dine_in'){
+                $subtotal = 0;
+                foreach ($productData as $product){
+                    $quantity = $product['quantity'];
+                    $price = $product['price'];
+                    $calculation = $quantity * $price;
+                    $subtotal += $calculation;
+                    
+                }
+
+                $summaryData = [
+                    'subtotal' => $subtotal,
+                    'takeaway_price' => 0,
+                    'admin_fee' => 0,
+                    'total' => $subtotal
+                ];
+            }else{
+                $subtotal = 0;
+                $takeaway_charge = 2000;
+                foreach ($productData as $product){
+                    $quantity = $product['quantity'];
+                    $price = $product['price'];
+                    $calculation = $quantity * $price ;
+                    $subtotal += $calculation;
+                }
+                $summaryData = [
+                    'subtotal' => $subtotal,
+                    'takeaway_charge' => $takeaway_charge,
+                    'admin_fee' => 0,
+                    'total' => $subtotal + $takeaway_charge
+                ];
             }
-        } catch (Exception $error) {
-            return ResponseFormatter::error(
-                [
-                    'error' => $error,
-                    'message' => 'Something Went Wrong',
+ 
 
-                ],
-                'Authenticated Failed',
-                500
-            );
+            $result = [
+                'merchant' => $merchantData,
+                'items' => $productData,
+                'Summary' => $summaryData,
+
+            ];
+
+            return ResponseFormatter::success($result, 'Transactions Validated');
+        } catch (Exception $error) {
+            return ResponseFormatter::error([
+                'message' => 'Something Happened',
+                'error' => $error,
+                'code' => 500,
+            ]);
         }
     }
-
-    public function payments(Request $request)
-    {
-        $user = Auth::user()->id;
-        $request->validate([
-            'total_price' => 'required',
-            'payment' => 'required|in:QRIS,MANUAL,CASH',
-        ]);
-        $transaction = Transaction::where('users_id', $user)->orderBy('created_at', 'desc')->first();
-        //Update totalprice and payment method
-        $transaction->total_price = $request->total_price;
-        $transaction->payment = $request->payment;
-        $transaction->save();
-        return ResponseFormatter::success($transaction, "success");
-    }
-
 
     public function confirmpayment(ImageStoreRequest $request, Transaction $transaction)
     {
