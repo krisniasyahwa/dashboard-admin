@@ -27,7 +27,10 @@ class TransactionRequest extends FormRequest
         return [
             'status' => 'in:PENDING,PROCESS,READY,SUCCESS',
             'status_payment' => 'in:UNPAID,REVIEW,PAID,REJECTED,EXPIRED',
-            'payment_image' => 'nullable|image'
+            'payment_image' => 'nullable|image',
+            'transaction_type' => 'required|in:dine_in,takeaway',
+            'payment_type' => 'required|in:bayar_sekarang,bayar_nanti',
+            'payment' => 'required|in:QRIS,CASH'
         ];
     }
 }
