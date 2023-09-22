@@ -16,6 +16,8 @@
                     { data: 'id', name: 'id', width: '5%'},
                     { data: 'user.name', name: 'user.name' },
                     { data: 'total_price', name: 'total_price' },
+                    { data: 'transaction_type', name: 'transaction_type' },
+                    { data: 'payment_type', name: 'payment_type' },
                     { data: 'payment', name: 'payment' },
                     { data: 'status_payment', name: 'status_payment' },
                     { data: 'status', name: 'status' },
@@ -32,7 +34,7 @@
     </x-slot>
 
     <div class="py-2">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+        <div class="mx-auto sm:px-6 lg:px-8" style="max-width: 100rem">
             <div class="shadow overflow-hidden sm:rounded-md">
                 <div class="px-4 py-5 bg-white sm:p-6">
                     <table id="crudTable">
@@ -41,9 +43,11 @@
                             <th>ID</th>
                             <th style="text-align: left;">Nama</th>
                             <th>Total Harga</th>
-                            <th>Metode Pembayaran</th>
-                            <th>Status Pembayaran</th>
-                            <th>Status Pemesanan</th>
+                            <th>Transaction Type</th>
+                            <th>Payment Type</th>
+                            <th>Payment Method</th>
+                            <th>Status Payment</th>
+                            <th>Status Order</th>
                             <th>Aksi</th>
                         </tr>
                         </thead>
