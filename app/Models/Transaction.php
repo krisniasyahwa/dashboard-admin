@@ -13,7 +13,17 @@ class Transaction extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'users_id', 'address', 'payment', 'total_price', 'shipping_price', 'takeaway_charge', 'status', 'point_usage', 'status_payment', 'payment_image', 'payment_type'
+        'users_id',
+        'address',
+        'total_price',
+        'transaction_type',
+        'shipping_price',
+        'takeaway_charge',
+        'status',
+        'payment',
+        'payment_type',
+        'status_payment',
+        'payment_image'
     ];
     //Create relationship with Users table->One to Many->users_id as foreign key
     public function user()
