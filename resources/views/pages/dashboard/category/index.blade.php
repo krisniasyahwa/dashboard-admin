@@ -14,6 +14,9 @@
                 },
                 columns: [
                     { data: 'id', name: 'id', width: '5%'},
+                    { data: 'image_path', name: 'image_path', render: function (data) {
+                        return data != null ? '<img src="'+data+'" class="rounded-full w-20 h-20"/>' : null;
+                    }},
                     { data: 'name', name: 'name' },
                     { data: 'merchants.name', name: 'merchant' },
                     {
@@ -41,6 +44,7 @@
                         <thead>
                         <tr>
                             <th>ID</th>
+                            <th>Image</th>
                             <th>Nama</th>
                             <th>Merchant</th>
                             <th>Aksi</th>
