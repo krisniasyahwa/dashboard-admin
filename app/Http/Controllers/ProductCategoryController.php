@@ -23,7 +23,7 @@ class ProductCategoryController extends Controller
             $data = DataTables::of($query)
                 ->addColumn('action', function ($item) {
                     return '
-                        <a class="inline-block border border-gray-700 bg-gray-700 text-white rounded-md px-2 py-1 m-1 transition duration-500 ease select-none hover:bg-gray-800 focus:outline-none focus:shadow-outline" 
+                        <a class="inline-block border border-gray-700 bg-gray-700 text-white rounded-md px-2 py-1 m-1 transition duration-500 ease select-none hover:bg-gray-800 focus:outline-none focus:shadow-outline"
                             href="' . route('dashboard.category.edit', $item->id) . '">
                             Edit
                         </a>
@@ -68,6 +68,14 @@ class ProductCategoryController extends Controller
     {
         $data = $request->all();
 
+        $merchant_id = $data['merchants_id'];
+        $merchant_slug = Merchant::where('id', $merchant_id)->value('slug');
+
+        $image_path = $request->file('image_path');
+        if ($request->hasFile('image_path')) {
+            $data['image_path'] = $image_path->store('public/merchant/' . $merchant_slug . '/category');
+        }
+
         ProductCategory::create($data);
 
         return redirect()->route('dashboard.category.index');
@@ -110,6 +118,14 @@ class ProductCategoryController extends Controller
     public function update(ProductCategoryRequest $request, ProductCategory $category)
     {
         $data = $request->all();
+
+        $merchant_id = $data['merchants_id'];
+        $merchant_slug = Merchant::where('id', $merchant_id)->value('slug');
+
+        $image_path = $request->file('image_path');
+        if ($request->hasFile('image_path')) {
+            $data['image_path'] = $image_path->store('public/merchant/' . $merchant_slug . '/category');
+        }
 
         $category->update($data);
 
