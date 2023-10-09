@@ -109,6 +109,12 @@ class TransactionController extends Controller
     {
         $data = $request->all();
 
+        $payment_image = $request->file('payment_image');
+
+        if ($request->hasFile('payment_image')) {
+            $data['payment_image'] = $payment_image->store('public/transactions');
+        }
+
         $transaction->update($data);
         if ($previous_page == 'show'){
             return redirect()->route('dashboard.transaction.' . $previous_page, $transaction->id);
