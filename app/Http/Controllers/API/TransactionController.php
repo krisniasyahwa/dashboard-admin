@@ -13,10 +13,10 @@ use App\Traits\FilterByDate;
 use App\Http\Requests\ImageStoreRequest;
 use App\Models\Cart;
 use Exception;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Carbon;
 use Symfony\Component\HttpFoundation\Test\Constraint\ResponseFormatSame;
 
 class TransactionController extends Controller
@@ -122,13 +122,13 @@ class TransactionController extends Controller
 
             // Organize merchant data
             $merchantData = $merchants->map(function ($merchants) {
-                 return [
-                     'id' => $merchants->id,
-                     'name' => $merchants->name,
-                     'address' => $merchants->address,
-                 ];
-             });
-             //Organisze Product Data
+                return [
+                    'id' => $merchants->id,
+                    'name' => $merchants->name,
+                    'address' => $merchants->address,
+                ];
+            });
+            //Organisze Product Data
             $productData = $products->map(function ($product) use ($items) {
                 $item = collect($items)->first(function ($item) use ($product) {
                     return $item['id'] == $product->id;
@@ -143,14 +143,13 @@ class TransactionController extends Controller
                 ];
             });
             //Organize Transaction Summary Data
-            if($transaction === 'dine_in'){
+            if ($transaction === 'dine_in') {
                 $subtotal = 0;
-                foreach ($productData as $product){
+                foreach ($productData as $product) {
                     $quantity = $product['quantity'];
                     $price = $product['price'];
                     $calculation = $quantity * $price;
                     $subtotal += $calculation;
-                    
                 }
 
                 $summaryData = [
@@ -159,13 +158,13 @@ class TransactionController extends Controller
                     'admin_fee' => 0,
                     'total' => $subtotal
                 ];
-            }else{
+            } else {
                 $subtotal = 0;
                 $takeaway_charge = 2000;
-                foreach ($productData as $product){
+                foreach ($productData as $product) {
                     $quantity = $product['quantity'];
                     $price = $product['price'];
-                    $calculation = $quantity * $price ;
+                    $calculation = $quantity * $price;
                     $subtotal += $calculation;
                 }
                 $summaryData = [
@@ -175,7 +174,7 @@ class TransactionController extends Controller
                     'total' => $subtotal + $takeaway_charge
                 ];
             }
- 
+
 
             $result = [
                 'merchant' => $merchantData,
@@ -269,55 +268,6 @@ class TransactionController extends Controller
         return $product;
     }
 
-    // public function validation(Request $request){
-    //     $user = Auth::user()->id;
-    //     try{
-    //         $request->validate([
-    //             'transaction_type' => 'required|in:dine_in,takeaway',
-    //             'items' => 'required|array',
-    //             'items.*.id' => 'required|exists:products,id',
-    //             'items.*.quantity' => 'required|min:1',
-    //             'items.*.note' => 'nullable'
-    //         ]);
-
-    //         $items = $request->items;
-    //         $iditems = $items[0]['id'];
-    //         $detailproduct = Product::where('id', $iditems)->get();
-    //         $merchantId = $detailproduct[0]['merchants_id'];
-    //         $merchant = Merchant::where('id', $merchantId)->get();
-
-    //         $products = [];
-    //         foreach($request->items as $item){
-    //             // $transaction = [
-    //             //     'id' => $item['id'],
-    //             //     'quantity' => $item['quantity'],
-    //             //     'note' => $item['quantity'],
-
-    //             // ];
-    //             $product = Product::where('id', $item['id'])->get();
-    //             $products[] = $product;
-    //         }
-
-
-
-    //         $result = [
-    //             'merchant' => $merchant,
-    //             'items' => $products
-    //         ];
-
-
-    //         return ResponseFormatter::success($result, 'Transactions Validated');
-    //     } catch (Exception $error){
-    //         return ResponseFormatter::error([
-    //             'message' => 'Something Happen',
-    //             'error' => $error,
-    //             'code' => 500
-    //         ]);
-    //     }
-
-    // }
-    
-
     public function confirmpayment(ImageStoreRequest $request, Transaction $transaction)
     {
         $user = Auth::user();
@@ -330,5 +280,38 @@ class TransactionController extends Controller
             $transaction->save();
             return ResponseFormatter::success($transaction, 'success');
         };
+    }
+
+    public function confirmation(Request $request)
+    {
+        $user = Auth::user()->id;
+        $id = $request->route('id');
+        try {
+            //$transactions = Transaction::findOrFail($id);
+            $transactions = Transaction::with('items.product.merchant')->where('id', $id)->get();
+            if (!empty($transactions)) {
+                $merchantQR = $transactions[0]['items']['0']['product']['merchant']['qris_path'];
+                $totalPrice = $transactions[0]['total_price'];
+                $createdAt = $transactions[0]->created_at->format('H:i:s');
+                // Parse the 'H:i:s' string into a DateTime object
+                $createdAtDateTime = Carbon::createFromFormat('H:i:s', $createdAt);
+                // Add 15 minutes to the DateTime object
+                $createdAtDateTime->addMinutes(15);
+                $expiredAt = $createdAtDateTime->format('H:i:s');
+                $result = [
+                    'total_price' => $totalPrice,
+                    'qr' => $merchantQR,
+                    'created' => $createdAt,
+                    'expired' => $expiredAt
+                ];
+                return ResponseFormatter::success($result, 'Data Found');
+            }
+        } catch (Exception $error) {
+            return ResponseFormatter::error([
+                'message' => 'Something Happened',
+                'error' => $error,
+                'code' => 500,
+            ]);
+        }
     }
 }
