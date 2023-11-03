@@ -11,7 +11,6 @@ use App\Models\Product;
 use App\Models\Merchant;
 use App\Traits\FilterByDate;
 use App\Http\Requests\ImageStoreRequest;
-use App\Models\Cart;
 use Exception;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -22,12 +21,12 @@ use Symfony\Component\HttpFoundation\Test\Constraint\ResponseFormatSame;
 class TransactionController extends Controller
 {
     use FilterByDate;
+
+    //Function for handle API get all history user transaction
     /**
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-
-
     public function index(Request $request)
     {
         $user = Auth::user()->id;
@@ -54,7 +53,7 @@ class TransactionController extends Controller
         }
     }
 
-
+    //Function for handle API checkout transaction after validation transaction
     /**
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
@@ -100,6 +99,7 @@ class TransactionController extends Controller
         return ResponseFormatter::success($transaction->load('items.product'), 'Data list transaksi berhasil diambil');
     }
 
+    //Function for handle API validation product after cart  
     public function validation(Request $request)
     {
         try {
@@ -193,35 +193,7 @@ class TransactionController extends Controller
         }
     }
 
-
-
-    public function potentialpoint($user, $items, $validatedDataTransaction)
-    {
-      
-        if ($user === 'admin') {
-            $totalprice = $validatedDataTransaction['total_price'];
-            $rules = 20;
-            $potentialpoint = $totalprice / $rules;
-            return $potentialpoint;
-        } elseif ($user === 'member') {
-            return "Potential Point 20%";
-        } elseif ($user === 'dosen') {
-            return "Potential Point 50%";
-        }
-        return false;
-    }
-
-    public function existingpoint($user, $totalprice)
-    {
-        $totalprice = $totalprice['total_price'];
-        $existingpoint = $user['user']['point'];
-        if ($existingpoint > 0) {
-            $rules = $totalprice / 50;
-            return $rules;
-        }
-        return false;
-    }
-
+    //Function for handle validation product in cart
     public function validatecart($items)
     {
         //Get the first merchant_id from first item
@@ -238,6 +210,7 @@ class TransactionController extends Controller
         return true; //If all item have same merchant_id return true
     }
 
+    //Function for 
     public function validationusergroups($user)
     {
 
@@ -261,6 +234,7 @@ class TransactionController extends Controller
         return $product;
     }
 
+    //Function for handle API confirmation payment with upload QR Image
     public function confirmpayment(ImageStoreRequest $request, Transaction $transaction)
     {
         $user = Auth::user();
@@ -275,6 +249,7 @@ class TransactionController extends Controller
         };
     }
 
+    //Function for handle API confirmation transaction before payment
     public function confirmation(Request $request)
     {
         $user = Auth::user()->id;
