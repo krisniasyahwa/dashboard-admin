@@ -20,6 +20,7 @@ class UserController extends Controller
      * @return mixed
      */
     
+     //Function for handle API get user profile
     public function fetch(Request $request)
     {
         $user = Auth::user()->id;
@@ -32,7 +33,8 @@ class UserController extends Controller
      * @return \Illuminate\Http\JsonResponse
      * @throws \Exception
      */
-    //Public function login with parameter Request $request
+
+    //Function for handle API Login
     public function login(Request $request)
     {
         
@@ -74,7 +76,8 @@ class UserController extends Controller
      * @return \Illuminate\Http\JsonResponse
      * @throws \Exception
      */
-    //Public function register with parameter request
+
+    //Function For Handle API Register
     public function register(Request $request)
     {
         
@@ -109,6 +112,8 @@ class UserController extends Controller
             ],'Authentication Failed', 500); 
         }
     }
+
+    //Function for handle API Logout
     public function logout(Request $request)
     {
         
@@ -116,7 +121,7 @@ class UserController extends Controller
         return ResponseFormatter::success($token,'Token Revoked'); 
     }
 
-   
+   //Function for handel API update profile
     public function updateProfile(Request $request)
     {
         $data = $request->all(); 

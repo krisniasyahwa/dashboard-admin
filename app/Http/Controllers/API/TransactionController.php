@@ -197,8 +197,7 @@ class TransactionController extends Controller
 
     public function potentialpoint($user, $items, $validatedDataTransaction)
     {
-        // $group = User::with('usergroup.group')->where('id',$user)->get();
-        //$group = $user;
+      
         if ($user === 'admin') {
             $totalprice = $validatedDataTransaction['total_price'];
             $rules = 20;
@@ -256,12 +255,6 @@ class TransactionController extends Controller
 
     public function validationpromoprice($items)
     {
-        // $productRequest = $items;
-        // foreach ($productRequest as $product) {
-        //     $productId[] = $product['products_id'];
-        //     $product = Product::where('promo_price', '>', 0)->whereIn('id', $productId)->get();
-        // };
-        // return $product;
 
         $productRequest = collect($items)->pluck('products_id')->toArray();
         $product = Product::where('promo_price', '>', 0)->whereIn('id', $productRequest)->get();
