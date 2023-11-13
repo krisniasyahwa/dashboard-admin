@@ -123,34 +123,25 @@ class TransactionController extends Controller
             ]);
 
             $items = $request->items;
-            $idItems = array_column($items, 'id'); // Extract all product IDs
-            $merchantId = Product::whereIn('id', $idItems)->pluck('merchants_id');
-            $merchants = Merchant::whereIn('id', $merchantId)->get();
+            $idItems = array_column($items, 'id');
+            $idFirstItem = $items[0]['id'];
+            $merchantId = Product::where('id', $idFirstItem)->pluck('merchants_id');
+            $merchantData = Merchant::whereIn('id', $merchantId)->get();
             $products = Product::whereIn('id', $idItems)->get();
             $transaction = $request->transaction_type;
 
 
-
-            // Organize merchant data
-            $merchantData = $merchants->map(function ($merchants) {
-                return [
-                    'id' => $merchants->id,
-                    'name' => $merchants->name,
-                    'address' => $merchants->address,
-                ];
-            });
-            //Organisze Product Data
-            $productData = $products->map(function ($product) use ($items) {
-                $item = collect($items)->first(function ($item) use ($product) {
-                    return $item['id'] == $product->id;
-                });
-                $quantity = isset($item['quantity']) ? $item['quantity'] : 0;
+            //Organize Product Data
+            $productData = $products->map(function ($product, $index) use ($items) {
+                $quantity = $items[$index]['quantity'];
+                $note = $items[$index]['note'] ?? ''; // Use the note from the request
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
                     'quantity' => $quantity,
                     'price' => $product->price,
                     'promo_price' => $product->promo_price,
+                    'note' => $note,
                 ];
             });
 
