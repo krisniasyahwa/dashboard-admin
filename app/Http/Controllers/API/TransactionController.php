@@ -15,8 +15,10 @@ use Exception;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\validation\Validator;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Test\Constraint\ResponseFormatSame;
+use Throwable;
 
 class TransactionController extends Controller
 {
@@ -60,43 +62,52 @@ class TransactionController extends Controller
      */
     public function checkout(Request $request)
     {
-        $user = Auth::user()->id;
+        $user = Auth::user();
 
         $request->validate([
-            'address' => 'nullable',
-            'total_price' => 'required',
+            'transaction_type' => 'required|in:DINEIN,TAKEAWAY',
             'takeaway_charge' => 'required|min:0',
-            'status' => 'required|in:PENDING, SUCCESS, CANCELLED, FAILED, SHIPPING, SHIPPED',
+            'admin_fee' => 'required|in:2000',
+            'payment_type' => 'required|in:BAYAR_SEKARANG,BAYAR_NANTI',
             'payment' => 'required|in:QRIS,MANUAL',
+            'status' => 'required|in:PENDING, SUCCESS, CANCELLED, FAILED, SHIPPING, SHIPPED',
+            'total_price' => 'required',
             'point_usage' => 'required|min:0',
-            'payment_type' => 'required|in:bayar_sekarang,bayar_nanti',
             'items' => 'required|array',
-            'items.*.id' => 'required|existroducts,id',
+            'items.*.id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|min:1',
             'items.*.note' => 'nullable',
         ]);
 
-        $transaction = Transaction::create([
-            'users_id' => $user,
-            'address' => $request->address,
-            'total_price' => $request->total_price,
-            'status' => $request->status,
-            'payment' => $request->payment,
-            'point_usage' => $request->point_usage,
-            'payment_type' => $request->payment_type,
-        ]);
-
-        foreach ($request->items as $product) {
-
-            TransactionItem::create([
-                'users_id' => $user,
-                'products_id' => $product['id'],
-                'transactions_id' => $transaction->id,
-                'quantity' => $product['quantity'],
-                'note' => $product['note'],
+        try{
+            $transaction = Transaction::create([
+                'users_id' => $user->id,
+                'transaction_type' => $request->transaction_type,
+                'takeaway_charge' => $request->takeaway_charge,
+                'total_price' => $request->total_price,
+                'status' => $request->status,
+                'payment' => $request->payment,
+                'point_usage' => $request->point_usage,
+                'payment_type' => $request->payment_type,
             ]);
+    
+            foreach ($request->items as $product) {
+    
+                TransactionItem::create([
+                    'users_id' => $user->id,
+                    'products_id' => $product['id'],
+                    'transactions_id' => $transaction->id,
+                    'quantity' => $product['quantity'],
+                    'note' => $product['note'],
+                ]);
+            }
+
+            return ResponseFormatter::success($transaction->load('items.product'), 'Checkout berhasil');
+        }catch(\Throwable $th){
+            return ResponseFormatter::error($th, 'Something Happen', 500 );
         }
-        return ResponseFormatter::success($transaction->load('items.product'), 'Data list transaksi berhasil diambil');
+
+       
     }
 
     //Function for handle API validation product after cart  
@@ -142,6 +153,7 @@ class TransactionController extends Controller
                     'promo_price' => $product->promo_price,
                 ];
             });
+
             //Organize Transaction Summary Data
             if ($transaction === 'dine_in') {
                 $subtotal = 0;
@@ -193,23 +205,6 @@ class TransactionController extends Controller
         }
     }
 
-    //Function for handle validation product in cart
-    public function validatecart($items)
-    {
-        //Get the first merchant_id from first item
-        $merchants_id = $items[0]['product']['merchants_id'];
-
-        //Loop to check if all item have same merchant_id
-        foreach ($items as $item) {
-
-            if ($item['product']['merchants_id'] !== $merchants_id) {
-                return false; //If item have different merchant_id return false
-            }
-        }
-
-        return true; //If all item have same merchant_id return true
-    }
-
     //Function for 
     public function validationusergroups($user)
     {
@@ -235,27 +230,33 @@ class TransactionController extends Controller
     }
 
     //Function for handle API confirmation payment with upload QR Image
-    public function confirmpayment(ImageStoreRequest $request, Transaction $transaction)
+    public function confirmpayment(Request $request)
     {
-        $user = Auth::user();
-        $request->validated();
+        try{
+            $user = Auth::user();
+        $request->validate([
+            'payment_image' => 'required|image|mimes:jpeg,jpg,png,svg|max:2048'
+        ]);
         $paymentImage = $request->file('payment_image');
-        // Find the user's latest transaction
-        $transaction = Transaction::with('items.product.merchant')->where('users_id', $user->id)->latest()->first();
+        // Find the user's newest transaction
+        $transaction = Transaction::with('items.product.merchant')->where('users_id', $user->id)->first();
         if ($request->hasFile('payment_image')) {
             $transaction->payment_image = $paymentImage->store('public/transactions');
             $transaction->save();
-            return ResponseFormatter::success($transaction, 'success');
         };
+        return ResponseFormatter::success($transaction, 'success');
+        }catch(\Throwable $th){
+            return ResponseFormatter::error($th, 'Something Happen', 500 );
+        }
+        
     }
 
     //Function for handle API confirmation transaction before payment
     public function confirmation(Request $request)
     {
-        $user = Auth::user()->id;
+        $user = Auth::user();
         $id = $request->route('id');
         try {
-            //$transactions = Transaction::findOrFail($id);
             $transactions = Transaction::with('items.product.merchant')->where('id', $id)->get();
             if (!empty($transactions)) {
                 $merchantQR = $transactions[0]['items']['0']['product']['merchant']['qris_path'];
@@ -282,4 +283,175 @@ class TransactionController extends Controller
             ]);
         }
     }
+
+// START API DEVELOPMENTS v2
+    // public function validationcart(Request $request)
+    // {
+    //     try {
+    //         $request->validate([
+    //             'items' => 'required|array',
+    //             'items.*.id' => 'required|exists:products,id',
+    //             'items.*.quantity' => 'required|min:1',
+    //             'items.*.note' => 'nullable'
+    //         ]);
+
+    //         $items = $request->items;
+    //         $idItems = array_column($items, 'id'); // Extract all product IDs
+    //         $merchantId = Product::whereIn('id', $idItems)->pluck('merchants_id');
+    //         $merchants = Merchant::whereIn('id', $merchantId)->get();
+    //         $products = Product::whereIn('id', $idItems)->get();
+
+
+
+    //         // Organize merchant data
+    //         $merchantData = $merchants->map(function ($merchants) {
+    //             return [
+    //                 'id' => $merchants->id,
+    //                 'name' => $merchants->name,
+    //                 'address' => $merchants->address,
+    //             ];
+    //         });
+    //         //Organisze Product Data
+    //         $productData = $products->map(function ($product) use ($items) {
+    //             $item = collect($items)->first(function ($item) use ($product) {
+    //                 return $item['id'] == $product->id;
+    //             });
+    //             $quantity = isset($item['quantity']) ? $item['quantity'] : 0;
+    //             return [
+    //                 'id' => $product->id,
+    //                 'name' => $product->name,
+    //                 'quantity' => $quantity,
+    //                 'price' => $product->price,
+    //                 'promo_price' => $product->promo_price,
+    //             ];
+    //         });
+            
+    //         //Organize Transaction Summary Data
+    //             $subtotal = 0;
+    //             foreach ($productData as $product) {
+    //                 $quantity = $product['quantity'];
+    //                 $price = $product['price'];
+    //                 $calculation = $quantity * $price;
+    //                 $subtotal += $calculation;
+    //             }
+    //             $summaryData = [
+    //                 'subtotal' => $subtotal,
+    //                 'admin_fee' => 0,
+    //                 'total' => $subtotal 
+    //             ];
+
+    //         $result = [
+    //             'merchant' => $merchantData,
+    //             'items' => $productData,
+    //             'Summary' => $summaryData,
+
+    //         ];
+
+    //         return ResponseFormatter::success($result, 'Transactions Validated');
+    //     } catch (Exception $error) {
+    //         return ResponseFormatter::error([
+    //             'message' => 'Something Happened',
+    //             'error' => $error,
+    //             'code' => 500,
+    //         ]);
+    //     }
+    // }
+
+    // Function for handle validation product in cart
+    // public function validatecart($items)
+    // {
+    //     //Get the first merchant_id from first item
+    //     $merchants_id = $items[0]['product']['merchants_id'];
+
+    //     //Loop to check if all item have same merchant_id
+    //     foreach ($items as $item) {
+
+    //         if ($item['product']['merchants_id'] !== $merchants_id) {
+    //             return false; //If item have different merchant_id return false
+    //         }
+    //     }
+
+    //     return true; //If all item have same merchant_id return true
+    // }
+
+    // public function checkoutcart(Request $request){
+    //     $user = Auth::user();
+
+    //     $request->validate([
+    //         'transaction_type' => 'required|in:dine_in,takeaway',
+    //         'total_price' => 'required',
+    //         'admin_fee' => 'required|in:2000',
+    //         'status' => 'required|in:PENDING, SUCCESS, CANCELLED, FAILED, SHIPPING, SHIPPED',
+    //         'payment' => 'required|in:QRIS,MANUAL',
+    //         'point_usage' => 'required|min:0',
+    //         'payment_type' => 'required|in:bayar_sekarang,bayar_nanti',
+    //         'items' => 'required|array',
+    //         'items.*.id'=>'required|exists:products,id',
+    //         'items.*.quantity' => 'required|min:1',
+    //         'items.*.note' => 'nullable',
+    //     ]);
+
+    //     $productId = array_column($request->items, 'id');
+    //     //$productId = $request->items[0]['id'];
+    //     $merchantId = Product::where('id',$productId)->pluck('merchants_id');
+    //     $merchant = Merchant::where('id', $merchantId)->get();
+
+    //     if($request->transaction_type === 'takeaway'){
+    //         $takeawayPrice = 2000;
+    //         $transactions = Transaction::create([
+    //             'users_id' => $user,
+    //             'total_price' => $request->total_price,
+    //             'status' => $request->status,
+    //             'payment' => $request->payment,
+    //             'point_usage' => $request->point_usage,
+    //             'payment_type' => $request->payment_type,
+    //         ]);
+
+    //         foreach($request->items as $item){
+    //             $items = TransactionItem::create([
+    //                 'product_id' => $item['id'],
+    //                 'quantity' => $item['quantity'],
+    //                 'note' => $item['note']
+    //             ]);
+    //         }
+    //         $summaryTransaction = [
+    //             'payment_type' => $request->payment_type,
+    //             'subtotal' => 65000,
+    //             'point_usage' => 0,
+    //             'admin_fee' => $request->admin_fee,
+    //             'takeaway_price' => $takeawayPrice,
+    //             'total_price' => 65000
+    //         ];
+    //     }else{
+    //         $takeawayPrice = 0;
+    //         $summaryTransaction = [
+    //             'payment_type' => $request->payment_type,
+    //             'subtotal' => 65000,
+    //             'point_usage' => 0,
+    //             'admin_fee' => $request->admin_fee,
+    //             'takeaway_price' => $takeawayPrice,
+    //             'total_price' => 65000
+    //         ];
+    //     }
+        
+
+        
+    //     $result = [
+    //         'id' => $transactions,
+    //         'users_id' => $user->id,
+    //         'status' => 'PENDING',
+    //         'payments' => 'MANUAL',
+    //         'transaction_type' => $request->transaction_type,
+    //         'merchant' => $merchant,
+    //         'items' => $items,
+    //         'summary' => $summaryTransaction
+    //     ];
+
+
+       
+
+    //     return ResponseFormatter::success($result, 'Checkout Berhasil');
+    // }
+
+// END API DEVELOPMENTS V2
 }
