@@ -126,7 +126,7 @@ class TransactionController extends Controller
             $idItems = array_column($items, 'id');
             $idFirstItem = $items[0]['id'];
             $merchantId = Product::where('id', $idFirstItem)->pluck('merchants_id');
-            $merchantData = Merchant::whereIn('id', $merchantId)->get();
+            $merchantData = Merchant::where('id', $merchantId)->get();
             $products = Product::whereIn('id', $idItems)->get();
             $transaction = $request->transaction_type;
 
@@ -180,7 +180,7 @@ class TransactionController extends Controller
 
 
             $result = [
-                'merchant' => $merchantData,
+                'merchant' => $merchantData[0],
                 'items' => $productData,
                 'Summary' => $summaryData,
 
