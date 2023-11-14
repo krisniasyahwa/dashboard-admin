@@ -163,7 +163,8 @@ class TransactionController extends Controller
                 }
 
                 $summaryData = [
-                    'subtotal' => $productData,
+                    'subtotal' => $subtotal
+                    ,
                     'takeaway_price' => 0,
                     'admin_fee' => 0,
                     'total' => $subtotal
