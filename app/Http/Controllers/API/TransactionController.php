@@ -127,21 +127,28 @@ class TransactionController extends Controller
             $idFirstItem = $items[0]['id'];
             $merchantId = Product::where('id', $idFirstItem)->pluck('merchants_id');
             $merchantData = Merchant::where('id', $merchantId)->get();
-            $products = Product::whereIn('id', $idItems)->get();
+            $products = Product::with(['featured_image','galleries', 'category', 'merchant'])->whereIn('id', $idItems)->get();
             $transaction = $request->transaction_type;
 
 
             //Organize Product Data
+
             $productData = $products->map(function ($product, $index) use ($items) {
                 $quantity = $items[$index]['quantity'];
                 $note = $items[$index]['note'] ?? ''; // Use the note from the request
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
+                    'description' => $product->description,
+                    'tags' => $product->tags,
                     'quantity' => $quantity,
                     'price' => $product->price,
                     'promo_price' => $product->promo_price,
                     'note' => $note,
+                    // 'merchant_id' => $product->merchant,
+                    'category' => $product->category,
+                    'galleries' => $product->galleries,
+                    // 'featured_image' => $product->featured_image,
                 ];
             });
 
@@ -156,7 +163,7 @@ class TransactionController extends Controller
                 }
 
                 $summaryData = [
-                    'subtotal' => $subtotal,
+                    'subtotal' => $productData,
                     'takeaway_price' => 0,
                     'admin_fee' => 0,
                     'total' => $subtotal

@@ -57,6 +57,7 @@ class Product extends Model
     {
         return $this->hasMany(Promo::class, 'products_id', 'id');
     }
+    
     // // public function promo(){
     // //     return $this->(Promo::class, '');
     // }
