@@ -68,7 +68,7 @@ class TransactionController extends Controller
             'transaction_type' => 'required|in:DINEIN,TAKEAWAY',
             'takeaway_charge' => 'required|min:0',
             'admin_fee' => 'required|in:2000',
-            'payment_type' => 'required|in:BAYAR_SEKARANG,BAYAR_NANTI',
+            'payment_type' => 'required|in:BAYAR_SEKARANG,BAYAR_DITEMPAT',
             'payment' => 'required|in:QRIS,MANUAL',
             'status' => 'required|in:PENDING, SUCCESS, CANCELLED, FAILED, SHIPPING, SHIPPED',
             'total_price' => 'required',
