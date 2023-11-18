@@ -76,29 +76,27 @@ class TransactionController extends Controller
 
         try{
 
-            if($request->transaction_type === "TAKEAWAY"){
+            if ($request->transaction_type === "TAKEAWAY") {
                 $itemRequest = $request->items;
                 $items = array_column($itemRequest, 'id');
                 $products = Product::whereIn('id', $items)->get();
-                $productData = $products->map(function ($products, $index) use ($itemRequest) {
+                $productData = $products->map(function ($product, $index) use ($itemRequest) {
                     $quantity = $itemRequest[$index]['quantity'];
-                    $note = $itemsRequest[$index]['note'] ?? ''; // Use the note from the request
+                    $note = $itemRequest[$index]['note'] ?? ''; // Use the note from the request
                     return [
-                        'id' => $products->id,
-                        'name' => $products->name,
-                        // 'description' => $products->description,
-                        // 'tags' => $products->tags,
+                        'id' => $product->id,
+                        'name' => $product->name,
                         'quantity' => $quantity,
-                        'price' => $products->price,
-                        'promo_price' => $products->promo_price,
-                        'takeaway_charge' => $products->takeway_charge,
+                        'price' => $product->price,
+                        'promo_price' => $product->promo_price,
+                        'takeaway_charge' => $product->takeway_charge,
                         'note' => $note,
                     ];
                 });
-
+            
                 $total_takeaway_charge = 0;
                 $total_price_product = 0;
-                foreach($productData as $product){
+                foreach ($productData as $product) {
                     $quantity = $product['quantity'];
                     $takeaway = $product['takeaway_charge'];
                     $price = $product['price'];
@@ -106,10 +104,9 @@ class TransactionController extends Controller
                     $calculation_price = $quantity * $price;
                     $total_takeaway_charge += $calculation_takeaway;
                     $total_price_product += $calculation_price;
-                    $subtotal = $total_price_product+$total_takeaway_charge;
+                    $subtotal = $total_price_product + $total_takeaway_charge;
                 }
-                
-                
+            
                 $transaction = Transaction::create([
                     'users_id' => $user->id,
                     'transaction_type' => $request->transaction_type,
@@ -119,17 +116,16 @@ class TransactionController extends Controller
                     'payment' => $request->payment,
                     'payment_type' => $request->payment_type,
                 ]);
-
-                foreach($itemRequest as $item){
-                    TransactionItem::create( [
+            
+                foreach ($itemRequest as $item) {
+                    TransactionItem::create([
                         'users_id' => $user->id,
                         'products_id' => $item['id'],
                         'quantity' => $item['quantity'],
                         'transactions_id' => $transaction->id,
-                        'note' => $item['note']
+                        'note' => $item['note'],
                     ]);
                 }
-               
             }else{
                 $itemRequest = $request->items;
                 $items = array_column($itemRequest, 'id');
