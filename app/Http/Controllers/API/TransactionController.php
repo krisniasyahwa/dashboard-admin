@@ -66,13 +66,9 @@ class TransactionController extends Controller
 
         $request->validate([
             'transaction_type' => 'required|in:DINE_IN,TAKEAWAY',
-            'takeaway_charge' => 'required|min:0',
-            'admin_fee' => 'required|in:2000',
             'payment_type' => 'required|in:BAYAR_SEKARANG,BAYAR_DITEMPAT',
-            'payment' => 'required|in:QRIS,MANUAL',
-            'status' => 'required|in:PENDING, SUCCESS, CANCELLED, FAILED, SHIPPING, SHIPPED',
+            'payment' => 'required|in:QRIS,CASH',
             'total_price' => 'required',
-            'point_usage' => 'required|min:0',
             'items' => 'required|array',
             'items.*.id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|min:1',
@@ -144,6 +140,7 @@ class TransactionController extends Controller
                     'quantity' => $quantity,
                     'price' => $product->price,
                     'promo_price' => $product->promo_price,
+                    'takeaway_charge' => $product->takeway_charge,
                     'note' => $note,
                     // 'merchant_id' => $product->merchant,
                     'category' => $product->category,
@@ -153,7 +150,7 @@ class TransactionController extends Controller
             });
 
             //Organize Transaction Summary Data
-            if ($transaction === 'dine_in') {
+            if ($transaction === 'DINE_IN') {
                 $subtotal = 0;
                 foreach ($productData as $product) {
                     $quantity = $product['quantity'];
@@ -163,26 +160,28 @@ class TransactionController extends Controller
                 }
 
                 $summaryData = [
-                    'subtotal' => $subtotal
-                    ,
+                    'subtotal' => $subtotal,
                     'takeaway_price' => 0,
                     'admin_fee' => 0,
                     'total' => $subtotal
                 ];
             } else {
                 $subtotal = 0;
-                $takeaway_charge = 2000;
+                $total_takeaway_charge = 0;
                 foreach ($productData as $product) {
                     $quantity = $product['quantity'];
                     $price = $product['price'];
+                    $takeaway_charge = $product['takeaway_charge'];
                     $calculation = $quantity * $price;
+                    $takeaway = $quantity * $takeaway_charge;
                     $subtotal += $calculation;
+                    $total_takeaway_charge += $takeaway; 
                 }
                 $summaryData = [
                     'subtotal' => $subtotal,
-                    'takeaway_charge' => $takeaway_charge,
+                    'takeaway_charge' => $total_takeaway_charge,
                     'admin_fee' => 0,
-                    'total' => $subtotal + $takeaway_charge
+                    'total' => $subtotal + $total_takeaway_charge
                 ];
             }
 
