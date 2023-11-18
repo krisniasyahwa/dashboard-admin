@@ -144,7 +144,7 @@ class MerchantController extends Controller
         try {
             // Show all products by merchant
             // $products = Merchant::find($merchant)->first()->products()->with(['galleries','category']);
-            $products = Merchant::find($merchant)->products()->with(['galleries','category'])->get();
+            $products = Merchant::find($merchant)->products()->with(['galleries','category'])->paginate();
 
             // Error handling if no products found
             if ($products->count() == 0) {
