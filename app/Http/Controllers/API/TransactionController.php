@@ -65,7 +65,7 @@ class TransactionController extends Controller
         $user = Auth::user();
 
         $request->validate([
-            'transaction_type' => 'required|in:DINEIN,TAKEAWAY',
+            'transaction_type' => 'required|in:DINE_IN,TAKEAWAY',
             'takeaway_charge' => 'required|min:0',
             'admin_fee' => 'required|in:2000',
             'payment_type' => 'required|in:BAYAR_SEKARANG,BAYAR_DITEMPAT',
