@@ -115,7 +115,7 @@ class TransactionController extends Controller
     {
         try {
             $request->validate([
-                'transaction_type' => 'required|in:DINEIN,TAKEAWAY',
+                'transaction_type' => 'required|in:DINE_IN,TAKEAWAY',
                 'items' => 'required|array',
                 'items.*.id' => 'required|exists:products,id',
                 'items.*.quantity' => 'required|min:1',
