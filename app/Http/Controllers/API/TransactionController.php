@@ -267,9 +267,10 @@ class TransactionController extends Controller
         //Organize Transaction Summary Data
         if ($transaction === 'DINE_IN') {
             $subtotal = 0;
+            
             foreach ($productData as $product) {
                 $quantity = $product['quantity'];
-                $price = $product['price'];
+                $price = ($product['promo_price'] <= $product['price']) ? $product['promo_price'] : $product['price'];
                 $calculation = $quantity * $price;
                 $subtotal += $calculation;
             }
@@ -285,7 +286,7 @@ class TransactionController extends Controller
             $total_takeaway_charge = 0;
             foreach ($productData as $product) {
                 $quantity = $product['quantity'];
-                $price = $product['price'];
+                $price = ($product['promo_price'] <= $product['price']) ? $product['promo_price'] : $product['price'];
                 $takeaway_charge = $product['takeaway_charge'];
                 $calculation = $quantity * $price;
                 $takeaway = $quantity * $takeaway_charge;
@@ -304,7 +305,6 @@ class TransactionController extends Controller
             'merchant' => $merchantData[0],
             'items' => $productData,
             'Summary' => $summaryData,
-
         ];
         return $result;
     }
