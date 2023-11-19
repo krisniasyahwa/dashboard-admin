@@ -339,174 +339,42 @@ class TransactionController extends Controller
         }
     }
 
-// START API DEVELOPMENTS v2
-    // public function validationcart(Request $request)
-    // {
-    //     try {
-    //         $request->validate([
-    //             'items' => 'required|array',
-    //             'items.*.id' => 'required|exists:products,id',
-    //             'items.*.quantity' => 'required|min:1',
-    //             'items.*.note' => 'nullable'
-    //         ]);
+    public function detailTransaction(Transaction $transaction, Request $request){
+        $id = $request->route('id');
+        try{
+            $transaction=Transaction::with('items.product.merchant')->where('id', $id)->first();
+            $expiredTime = $transaction->created_at->addMinutes(15);
 
-    //         $items = $request->items;
-    //         $idItems = array_column($items, 'id'); // Extract all product IDs
-    //         $merchantId = Product::whereIn('id', $idItems)->pluck('merchants_id');
-    //         $merchants = Merchant::whereIn('id', $merchantId)->get();
-    //         $products = Product::whereIn('id', $idItems)->get();
+            $summary = [
+                'id_transaction' => $transaction->id,
+                'time' => $transaction->created_at->format('H:i:s'),
+                'date' => $transaction->created_at->format('Y-m-d'),
+                'method' => $transaction->payment,
+                'admin_fee' => 0,
+                'subtotal' => $transaction->total_price - $transaction->takeaway_charge,
+                'takeaway_charge' => $transaction->takeaway_charge,
+                'total_price' => $transaction->total_price,
+                
+            ];
 
-
-
-    //         // Organize merchant data
-    //         $merchantData = $merchants->map(function ($merchants) {
-    //             return [
-    //                 'id' => $merchants->id,
-    //                 'name' => $merchants->name,
-    //                 'address' => $merchants->address,
-    //             ];
-    //         });
-    //         //Organisze Product Data
-    //         $productData = $products->map(function ($product) use ($items) {
-    //             $item = collect($items)->first(function ($item) use ($product) {
-    //                 return $item['id'] == $product->id;
-    //             });
-    //             $quantity = isset($item['quantity']) ? $item['quantity'] : 0;
-    //             return [
-    //                 'id' => $product->id,
-    //                 'name' => $product->name,
-    //                 'quantity' => $quantity,
-    //                 'price' => $product->price,
-    //                 'promo_price' => $product->promo_price,
-    //             ];
-    //         });
-            
-    //         //Organize Transaction Summary Data
-    //             $subtotal = 0;
-    //             foreach ($productData as $product) {
-    //                 $quantity = $product['quantity'];
-    //                 $price = $product['price'];
-    //                 $calculation = $quantity * $price;
-    //                 $subtotal += $calculation;
-    //             }
-    //             $summaryData = [
-    //                 'subtotal' => $subtotal,
-    //                 'admin_fee' => 0,
-    //                 'total' => $subtotal 
-    //             ];
-
-    //         $result = [
-    //             'merchant' => $merchantData,
-    //             'items' => $productData,
-    //             'Summary' => $summaryData,
-
-    //         ];
-
-    //         return ResponseFormatter::success($result, 'Transactions Validated');
-    //     } catch (Exception $error) {
-    //         return ResponseFormatter::error([
-    //             'message' => 'Something Happened',
-    //             'error' => $error,
-    //             'code' => 500,
-    //         ]);
-    //     }
-    // }
-
-    // Function for handle validation product in cart
-    // public function validatecart($items)
-    // {
-    //     //Get the first merchant_id from first item
-    //     $merchants_id = $items[0]['product']['merchants_id'];
-
-    //     //Loop to check if all item have same merchant_id
-    //     foreach ($items as $item) {
-
-    //         if ($item['product']['merchants_id'] !== $merchants_id) {
-    //             return false; //If item have different merchant_id return false
-    //         }
-    //     }
-
-    //     return true; //If all item have same merchant_id return true
-    // }
-
-    // public function checkoutcart(Request $request){
-    //     $user = Auth::user();
-
-    //     $request->validate([
-    //         'transaction_type' => 'required|in:dine_in,takeaway',
-    //         'total_price' => 'required',
-    //         'admin_fee' => 'required|in:2000',
-    //         'status' => 'required|in:PENDING, SUCCESS, CANCELLED, FAILED, SHIPPING, SHIPPED',
-    //         'payment' => 'required|in:QRIS,MANUAL',
-    //         'point_usage' => 'required|min:0',
-    //         'payment_type' => 'required|in:bayar_sekarang,bayar_nanti',
-    //         'items' => 'required|array',
-    //         'items.*.id'=>'required|exists:products,id',
-    //         'items.*.quantity' => 'required|min:1',
-    //         'items.*.note' => 'nullable',
-    //     ]);
-
-    //     $productId = array_column($request->items, 'id');
-    //     //$productId = $request->items[0]['id'];
-    //     $merchantId = Product::where('id',$productId)->pluck('merchants_id');
-    //     $merchant = Merchant::where('id', $merchantId)->get();
-
-    //     if($request->transaction_type === 'takeaway'){
-    //         $takeawayPrice = 2000;
-    //         $transactions = Transaction::create([
-    //             'users_id' => $user,
-    //             'total_price' => $request->total_price,
-    //             'status' => $request->status,
-    //             'payment' => $request->payment,
-    //             'point_usage' => $request->point_usage,
-    //             'payment_type' => $request->payment_type,
-    //         ]);
-
-    //         foreach($request->items as $item){
-    //             $items = TransactionItem::create([
-    //                 'product_id' => $item['id'],
-    //                 'quantity' => $item['quantity'],
-    //                 'note' => $item['note']
-    //             ]);
-    //         }
-    //         $summaryTransaction = [
-    //             'payment_type' => $request->payment_type,
-    //             'subtotal' => 65000,
-    //             'point_usage' => 0,
-    //             'admin_fee' => $request->admin_fee,
-    //             'takeaway_price' => $takeawayPrice,
-    //             'total_price' => 65000
-    //         ];
-    //     }else{
-    //         $takeawayPrice = 0;
-    //         $summaryTransaction = [
-    //             'payment_type' => $request->payment_type,
-    //             'subtotal' => 65000,
-    //             'point_usage' => 0,
-    //             'admin_fee' => $request->admin_fee,
-    //             'takeaway_price' => $takeawayPrice,
-    //             'total_price' => 65000
-    //         ];
-    //     }
-        
-
-        
-    //     $result = [
-    //         'id' => $transactions,
-    //         'users_id' => $user->id,
-    //         'status' => 'PENDING',
-    //         'payments' => 'MANUAL',
-    //         'transaction_type' => $request->transaction_type,
-    //         'merchant' => $merchant,
-    //         'items' => $items,
-    //         'summary' => $summaryTransaction
-    //     ];
+            //Response Output
+            $result = [
+                'expired_time' => $expiredTime,
+                'status' => $transaction->status,
+                'merchant' => $transaction->items[0]->product->merchant,
+                'items' => $transaction->items,
+                'summary' => $summary
 
 
-       
+            ];
+            return ResponseFormatter::success($result, 'Transaction Found');
 
-    //     return ResponseFormatter::success($result, 'Checkout Berhasil');
-    // }
-
-// END API DEVELOPMENTS V2
+        }catch (Exception $error) {
+            return ResponseFormatter::error([
+                'message' => 'Something Happened',
+                'error' => $error,
+                'code' => 500,
+            ]);
+        }
+    }
 }
