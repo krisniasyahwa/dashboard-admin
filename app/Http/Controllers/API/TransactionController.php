@@ -73,94 +73,62 @@ class TransactionController extends Controller
             'items.*.quantity' => 'required|min:1',
             'items.*.note' => 'nullable',
         ]);
-        try{
-            $user = Auth::user();
-            
-            if ($request->transaction_type === "TAKEAWAY") {
-                $itemRequest = $request->items;
-                $products = [];
-                foreach($itemRequest as $item){
-                    $quantity = $item['quantity'];
-                    $product = Product::find($item['id']);
-                    $product->quantity = $quantity;
-                    $products[] = $product;
-                }
-    
-                $takeaway_charge = 0;
-                $subtotal_price = 0;
-                foreach ($products as $p){
-                    $calculation_price = $p->price*$p->quantity;
-                    $calculation_takeaway = $p->quantity*$p->takeway_charge;
-                    $takeaway_charge += $calculation_takeaway;
-                    $subtotal_price += $calculation_price;
-                    $total_price = $subtotal_price + $takeaway_charge;
-                    $total_takeaway = $takeaway_charge;
-                }
-    
-                $transaction = Transaction::create([
-                    'users_id' => $user->id,
-                    'transaction_type' => $request->transaction_type,
-                    'takeaway_charge' => $total_takeaway,
-                    'total_price' => $total_price,
-                    'status' => 'PENDING',
-                    'payment' => $request->payment,
-                    'payment_type' => $request->payment_type                 
-                ]);
-    
-                foreach($itemRequest as $product){
-                    TransactionItem::create(
-                        [
+
+        try {  
+            $transactionValidated = $this->validationHelper($request);
+          
+            switch ($request->transaction_type) {
+                case 'TAKEAWAY':
+                    $transaction = Transaction::create([
+                        'users_id' => $user->id,
+                        'transaction_type' => $request->transaction_type,
+                        'takeaway_charge' => $transactionValidated['Summary']['takeaway_charge'],
+                        'total_price' => $transactionValidated['Summary']['total'],
+                        'status' => 'PENDING',
+                        'payment' => $request->payment,
+                        'payment_type' => $request->payment_type
+                    ]);
+
+
+                    foreach($request->items as $item){
+                        TransactionItem::create([
                             'users_id' => $user->id,
-                            'products_id' => $product['id'],
-                            'quantity' => $product['quantity'],
+                            'products_id' => $item['id'],
+                            'quantity' => $item['quantity'],
                             'transactions_id' => $transaction->id,
-                            'note' => $product['note']
-                       ]);
-                }
-        
-                //dd($takeaway_charge, $subtotal_price, $total_price, $total_takeaway, $transaction);
-                return ResponseFormatter::success($transaction->load('items.product'), 'Checkout berhasil');
-                
-            }else {
-                $itemRequest = $request->items;
-                $subtotal_price = 0;
-                foreach ($itemRequest as $item){
-                    $quantity = $item['quantity'];
-                    $product = Product::find($item['id']);
-                    $calculation_price = $product->price * $quantity;
-                    $subtotal_price += $calculation_price;
-                    $total_price = $subtotal_price;
-                }
-                
-                $transaction = Transaction::create([
-                    'users_id' => $user->id,
-                    'transaction_type' => $request->transaction_type,
-                    'takeaway_charge' => 0,
-                    'total_price' => $total_price,
-                    'status' => 'PENDING',
-                    'payment' => $request->payment,
-                    'payment_type' => $request->payment_type                 
-                ]);
-            
-                foreach($itemRequest as $product){
-                    TransactionItem::create(
-                        [
+                            'note' => $item['note']
+                        ]);
+                    }
+                    return ResponseFormatter::success($transaction->load('items.product'), 'Checkout Berhasil');
+                    break;
+                case 'DINE_IN':
+                    $transaction = Transaction::create([
+                        'users_id' => $user->id,
+                        'transaction_type' => $request->transaction_type,
+                        'takeaway_charge' => 0,
+                        'total_price' => $transactionValidated['Summary']['total'],
+                        'status' => 'PENDING',
+                        'payment' => $request->payment,
+                        'payment_type' => $request->payment_type
+                    ]);
+                    foreach($request->items as $item){
+                        TransactionItem::create([
                             'users_id' => $user->id,
-                            'products_id' => $product['id'],
-                            'quantity' => $product['quantity'],
+                            'products_id' => $item['id'],
+                            'quantity' => $item['quantity'],
                             'transactions_id' => $transaction->id,
-                            'note' => $product['note']
-                       ]);
-                }
-            
-                return ResponseFormatter::success($transaction->load('items.product'), 'Checkout berhasil');
+                            'note' => $item['note']
+                        ]);
+                    }
+                    return ResponseFormatter::success($transaction->load('items.product'), 'Checkout Berhasil');
+                    break;
+                default:
+                    return ResponseFormatter::error(null, 'Transaction Type Not Found', 400);
+                    break;
             }
-            
-           
-        } catch(\Throwable $th){
-            return ResponseFormatter::error($th, 'Something Happen', 500 );
+        } catch (\Throwable $th) {
+            return ResponseFormatter::error($th, 'Something Happen', 500);
         }
-       
     }
 
     //Function for handle API validation product after cart  
@@ -174,82 +142,7 @@ class TransactionController extends Controller
                 'items.*.quantity' => 'required|min:1',
                 'items.*.note' => 'nullable'
             ]);
-
-            $items = $request->items;
-            $idItems = array_column($items, 'id');
-            $idFirstItem = $items[0]['id'];
-            $merchantId = Product::where('id', $idFirstItem)->pluck('merchants_id');
-            $merchantData = Merchant::where('id', $merchantId)->get();
-            $products = Product::with(['featured_image','galleries', 'category', 'merchant'])->whereIn('id', $idItems)->get();
-            $transaction = $request->transaction_type;
-
-
-            //Organize Product Data
-
-            $productData = $products->map(function ($product, $index) use ($items) {
-                $quantity = $items[$index]['quantity'];
-                $note = $items[$index]['note'] ?? ''; // Use the note from the request
-                return [
-                    'id' => $product->id,
-                    'name' => $product->name,
-                    'description' => $product->description,
-                    'tags' => $product->tags,
-                    'quantity' => $quantity,
-                    'price' => $product->price,
-                    'promo_price' => $product->promo_price,
-                    'takeaway_charge' => $product->takeway_charge,
-                    'note' => $note,
-                    // 'merchant_id' => $product->merchant,
-                    'category' => $product->category,
-                    'galleries' => $product->galleries,
-                    // 'featured_image' => $product->featured_image,
-                ];
-            });
-
-            //Organize Transaction Summary Data
-            if ($transaction === 'DINE_IN') {
-                $subtotal = 0;
-                foreach ($productData as $product) {
-                    $quantity = $product['quantity'];
-                    $price = $product['price'];
-                    $calculation = $quantity * $price;
-                    $subtotal += $calculation;
-                }
-
-                $summaryData = [
-                    'subtotal' => $subtotal,
-                    'takeaway_price' => 0,
-                    'admin_fee' => 0,
-                    'total' => $subtotal
-                ];
-            } else {
-                $subtotal = 0;
-                $total_takeaway_charge = 0;
-                foreach ($productData as $product) {
-                    $quantity = $product['quantity'];
-                    $price = $product['price'];
-                    $takeaway_charge = $product['takeaway_charge'];
-                    $calculation = $quantity * $price;
-                    $takeaway = $quantity * $takeaway_charge;
-                    $subtotal += $calculation;
-                    $total_takeaway_charge += $takeaway; 
-                }
-                $summaryData = [
-                    'subtotal' => $subtotal,
-                    'takeaway_charge' => $total_takeaway_charge,
-                    'admin_fee' => 0,
-                    'total' => $subtotal + $total_takeaway_charge
-                ];
-            }
-
-
-            $result = [
-                'merchant' => $merchantData[0],
-                'items' => $productData,
-                'Summary' => $summaryData,
-
-            ];
-
+            $result = $this->validationHelper($request);
             return ResponseFormatter::success($result, 'Transactions Validated');
         } catch (Exception $error) {
             return ResponseFormatter::error([
@@ -337,6 +230,83 @@ class TransactionController extends Controller
                 'code' => 500,
             ]);
         }
+    }
+
+    // Function for validation transaction
+    public function validationHelper(Request $request){
+        $items = $request->items;
+        $idItems = array_column($items, 'id');
+        $idFirstItem = $items[0]['id'];
+        $merchantId = Product::where('id', $idFirstItem)->pluck('merchants_id');
+        $merchantData = Merchant::where('id', $merchantId)->get();
+        $products = Product::with(['featured_image','galleries', 'category', 'merchant'])->whereIn('id', $idItems)->get();
+        $transaction = $request->transaction_type;
+
+
+        //Organize Product Data
+        $productData = $products->map(function ($product, $index) use ($items) {
+            $quantity = $items[$index]['quantity'];
+            $note = $items[$index]['note'] ?? ''; // Use the note from the request
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'description' => $product->description,
+                'tags' => $product->tags,
+                'quantity' => $quantity,
+                'price' => $product->price,
+                'promo_price' => $product->promo_price,
+                'takeaway_charge' => $product->takeway_charge,
+                'note' => $note,
+                // 'merchant_id' => $product->merchant,
+                'category' => $product->category,
+                'galleries' => $product->galleries,
+                // 'featured_image' => $product->featured_image,
+            ];
+        });
+
+        //Organize Transaction Summary Data
+        if ($transaction === 'DINE_IN') {
+            $subtotal = 0;
+            foreach ($productData as $product) {
+                $quantity = $product['quantity'];
+                $price = $product['price'];
+                $calculation = $quantity * $price;
+                $subtotal += $calculation;
+            }
+
+            $summaryData = [
+                'subtotal' => $subtotal,
+                'takeaway_price' => 0,
+                'admin_fee' => 0,
+                'total' => $subtotal
+            ];
+        } else {
+            $subtotal = 0;
+            $total_takeaway_charge = 0;
+            foreach ($productData as $product) {
+                $quantity = $product['quantity'];
+                $price = $product['price'];
+                $takeaway_charge = $product['takeaway_charge'];
+                $calculation = $quantity * $price;
+                $takeaway = $quantity * $takeaway_charge;
+                $subtotal += $calculation;
+                $total_takeaway_charge += $takeaway; 
+            }
+            $summaryData = [
+                'subtotal' => $subtotal,
+                'takeaway_charge' => $total_takeaway_charge,
+                'admin_fee' => 0,
+                'total' => $subtotal + $total_takeaway_charge
+            ];
+        }
+
+        $result = [
+            'merchant' => $merchantData[0],
+            'items' => $productData,
+            'Summary' => $summaryData,
+
+        ];
+        return $result;
     }
 
 // START API DEVELOPMENTS v2
