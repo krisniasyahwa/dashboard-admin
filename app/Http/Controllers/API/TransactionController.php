@@ -288,18 +288,17 @@ class TransactionController extends Controller
     public function confirmpayment(Request $request)
     {
         try{
-            $user = Auth::user();
+            $id = $request->route('id');
         $request->validate([
             'payment_image' => 'required|image|mimes:jpeg,jpg,png,svg|max:2048'
         ]);
         $paymentImage = $request->file('payment_image');
-        // Find the user's newest transaction
-        $transaction = Transaction::with('items.product.merchant')->where('users_id', $user->id)->first();
+        $transaction = Transaction::with('items.product.merchant')->where('id', $id)->first();
         if ($request->hasFile('payment_image')) {
             $transaction->payment_image = $paymentImage->store('public/transactions');
             $transaction->save();
         };
-        return ResponseFormatter::success($transaction, 'success');
+        return ResponseFormatter::success($transaction,'success');
         }catch(\Throwable $th){
             return ResponseFormatter::error($th, 'Something Happen', 500 );
         }
@@ -312,11 +311,11 @@ class TransactionController extends Controller
         $user = Auth::user();
         $id = $request->route('id');
         try {
-            $transactions = Transaction::with('items.product.merchant')->where('id', $id)->get();
+            $transactions = Transaction::with('items.product.merchant')->where('id', $id)->first();
             if (!empty($transactions)) {
-                $merchantQR = $transactions[0]['items']['0']['product']['merchant']['qris_path'];
-                $totalPrice = $transactions[0]['total_price'];
-                $createdAt = $transactions[0]->created_at->format('H:i:s');
+                $merchantQR = $transactions['items']['0']['product']['merchant']['qris_path'];
+                $totalPrice = $transactions['total_price'];
+                $createdAt = $transactions->created_at->format('H:i:s');
                 // Parse the 'H:i:s' string into a DateTime object
                 $createdAtDateTime = Carbon::createFromFormat('H:i:s', $createdAt);
                 // Add 15 minutes to the DateTime object
