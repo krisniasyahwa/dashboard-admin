@@ -322,11 +322,12 @@ class TransactionController extends Controller
                 // Add 15 minutes to the DateTime object
                 $createdAtDateTime->addMinutes(15);
                 $expiredAt = $createdAtDateTime->format('H:i:s');
+                $expiredAtDateTime = Carbon::createFromFormat('H:i:s', $expiredAt);
                 $result = [
                     'total_price' => $totalPrice,
                     'qr' => $merchantQR,
-                    'created' => $createdAt,
-                    'expired' => $expiredAt
+                    'created' => $createdAtDateTime,
+                    'expired' => $expiredAtDateTime->addMinutes(15)
                 ];
                 return ResponseFormatter::success($result, 'Data Found');
             }
