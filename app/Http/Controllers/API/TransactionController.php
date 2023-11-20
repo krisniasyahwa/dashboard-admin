@@ -29,6 +29,91 @@ class TransactionController extends Controller
      * @return \Illuminate\Http\JsonResponse
      */
 
+     /* Method Helper*/
+    /* Helper For Validation*/
+    public function validationHelper(Request $request){
+        $items = $request->items;
+        $idItems = array_column($items, 'id');
+        $idFirstItem = $items[0]['id'];
+        $merchantId = Product::where('id', $idFirstItem)->pluck('merchants_id');
+        $merchantData = Merchant::where('id', $merchantId)->get();
+        $products = Product::with(['featured_image','galleries', 'category', 'merchant'])->whereIn('id', $idItems)->get();
+        $transaction = $request->transaction_type;
+
+
+        //Organize Product Data
+        $productData = $products->map(function ($product, $index) use ($items) {
+            $quantity = $items[$index]['quantity'];
+            $note = $items[$index]['note'] ?? ''; // Use the note from the request
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'description' => $product->description,
+                'tags' => $product->tags,
+                'quantity' => $quantity,
+                'price' => $product->price,
+                'promo_price' => $product->promo_price,
+                'takeaway_charge' => $product->takeway_charge,
+                'note' => $note,
+                // 'merchant_id' => $product->merchant,
+                'category' => $product->category,
+                'galleries' => $product->galleries,
+                // 'featured_image' => $product->featured_image,
+            ];
+        });
+
+        //Organize Transaction Summary Data
+        if ($transaction === 'DINE_IN') {
+            $subtotal = 0;
+            
+            foreach ($productData as $product) {
+                $quantity = $product['quantity'];
+                $price = ($product['promo_price'] <= $product['price']) ? $product['promo_price'] : $product['price'];
+                $calculation = $quantity * $price;
+                $subtotal += $calculation;
+            }
+
+            $summaryData = [
+                'subtotal' => $subtotal,
+                'takeaway_price' => 0,
+                'admin_fee' => 0,
+                'total' => $subtotal
+            ];
+        } else {
+            $subtotal = 0;
+            $total_takeaway_charge = 0;
+            foreach ($productData as $product) {
+                $quantity = $product['quantity'];
+                $price = ($product['promo_price'] <= $product['price']) ? $product['promo_price'] : $product['price'];
+                $takeaway_charge = $product['takeaway_charge'];
+                $calculation = $quantity * $price;
+                $takeaway = $quantity * $takeaway_charge;
+                $subtotal += $calculation;
+                $total_takeaway_charge += $takeaway; 
+            }
+            $summaryData = [
+                'subtotal' => $subtotal,
+                'takeaway_charge' => $total_takeaway_charge,
+                'admin_fee' => 0,
+                'total' => $subtotal + $total_takeaway_charge
+            ];
+        }
+
+        $result = [
+            'merchant' => $merchantData[0],
+            'items' => $productData,
+            'Summary' => $summaryData,
+        ];
+        return $result;
+    }
+
+    /* Helper For Detail Transaction */
+    public function getDetailTransactions($id){
+        return Transaction::with('items.product.merchant')->where('id', $id)->first();
+    }
+
+
+
     
     /* Method For GET Histories Transactions */
     public function histories(Request $request)
@@ -155,29 +240,6 @@ class TransactionController extends Controller
         }
     }
 
-    //Function for 
-    public function validationusergroups($user)
-    {
-
-        $user = User::with('usergroup.group')->where('id', $user)->get();
-
-        $userGroup = collect($user)->pluck('current_team_id');
-        if ($userGroup !== 0) {
-            return true;
-        } else {
-            return false;
-        }
-
-        return $userGroup;
-    }
-
-    public function validationpromoprice($items)
-    {
-
-        $productRequest = collect($items)->pluck('products_id')->toArray();
-        $product = Product::where('promo_price', '>', 0)->whereIn('id', $productRequest)->get();
-        return $product;
-    }
 
     //Function for handle API confirmation payment with upload QR Image
     public function confirmpayment(Request $request)
@@ -234,117 +296,77 @@ class TransactionController extends Controller
         }
     }
 
-    // Function for validation transaction
-    public function validationHelper(Request $request){
-        $items = $request->items;
-        $idItems = array_column($items, 'id');
-        $idFirstItem = $items[0]['id'];
-        $merchantId = Product::where('id', $idFirstItem)->pluck('merchants_id');
-        $merchantData = Merchant::where('id', $merchantId)->get();
-        $products = Product::with(['featured_image','galleries', 'category', 'merchant'])->whereIn('id', $idItems)->get();
-        $transaction = $request->transaction_type;
+   
 
+    public function detailTransaction($idTransaction){
+        try{
+            $transaction= $this->getDetailTransactions($idTransaction);
+            $expiredTime = $transaction->created_at->addMinutes(15);
 
-        //Organize Product Data
-        $productData = $products->map(function ($product, $index) use ($items) {
-            $quantity = $items[$index]['quantity'];
-            $note = $items[$index]['note'] ?? ''; // Use the note from the request
-            return [
-                'id' => $product->id,
-                'name' => $product->name,
-                'description' => $product->description,
-                'tags' => $product->tags,
-                'quantity' => $quantity,
-                'price' => $product->price,
-                'promo_price' => $product->promo_price,
-                'takeaway_charge' => $product->takeway_charge,
-                'note' => $note,
-                // 'merchant_id' => $product->merchant,
-                'category' => $product->category,
-                'galleries' => $product->galleries,
-                // 'featured_image' => $product->featured_image,
-            ];
-        });
-
-        //Organize Transaction Summary Data
-        if ($transaction === 'DINE_IN') {
-            $subtotal = 0;
-            
-            foreach ($productData as $product) {
-                $quantity = $product['quantity'];
-                $price = ($product['promo_price'] <= $product['price']) ? $product['promo_price'] : $product['price'];
-                $calculation = $quantity * $price;
-                $subtotal += $calculation;
-            }
-
-            $summaryData = [
-                'subtotal' => $subtotal,
-                'takeaway_price' => 0,
+            $summary = [
+                'id_transaction' => $transaction->id,
+                'time' => $transaction->created_at->format('H:i:s'),
+                'date' => $transaction->created_at->format('Y-m-d'),
+                'method' => $transaction->payment,
                 'admin_fee' => 0,
-                'total' => $subtotal
+                'subtotal' => $transaction->total_price - $transaction->takeaway_charge,
+                'takeaway_charge' => $transaction->takeaway_charge,
+                'total_price' => $transaction->total_price,
+
             ];
-        } else {
-            $subtotal = 0;
-            $total_takeaway_charge = 0;
-            foreach ($productData as $product) {
-                $quantity = $product['quantity'];
-                $price = ($product['promo_price'] <= $product['price']) ? $product['promo_price'] : $product['price'];
-                $takeaway_charge = $product['takeaway_charge'];
-                $calculation = $quantity * $price;
-                $takeaway = $quantity * $takeaway_charge;
-                $subtotal += $calculation;
-                $total_takeaway_charge += $takeaway; 
-            }
-            $summaryData = [
-                'subtotal' => $subtotal,
-                'takeaway_charge' => $total_takeaway_charge,
-                'admin_fee' => 0,
-                'total' => $subtotal + $total_takeaway_charge
+
+            //Response Output
+            $result = [
+                'expired_time' => $expiredTime,
+                'status' => $transaction->status,
+                'merchant' => $transaction->items[0]->product->merchant,
+                'items' => $transaction->items,
+                'summary' => $summary
             ];
+            return ResponseFormatter::success($result, "History Transaction untuk Id {$transaction->id} berhasil ditemukan");
+        }catch(Exception $error){
+            return ResponseFormatter::error([
+                            'message' => 'Semething Happened',
+                            'error' => $error,
+                            'code' => 500
+                        ]);
         }
-
-        $result = [
-            'merchant' => $merchantData[0],
-            'items' => $productData,
-            'Summary' => $summaryData,
-        ];
-        return $result;
     }
 
-    // public function history(Request $request){
-    //     $id = $request->route('id');
-    //     try{
-    //         $transaction = Transaction::where('id', $id)->first();
-    //         $summary = [
-    //             'id_transaction' => $transaction->id,
-    //             'time' => $transaction
-    //         ];
-    //         $result = [
-    //             'transaction_type' => $transaction->transaction_type,
-    //             'items' => $transaction->item,
-    //             'Summary' => $summary
 
-    //         ];
-    //         return ResponseFormatter::success($transaction, "History Transaction untuk Id {$transaction->id} berhasil ditemukan");
+    public function history($idTransaction){
+        // $id = $request->route('id');
+        try{
+            $transaction = $this->getDetailTransactions($idTransaction);
+            $summary = [
+                'id_transaction' => $transaction->id,
+                'time' => $transaction->created_at->format('H:i:s'),
+                'date' => $transaction->created_at->format('Y-m-d'),
+                'payment' => $transaction->payment,
+                'status_payment' => $transaction->status_payment,
+                'subtotal' => $transaction->total_price - $transaction->takeaway_charge,
+                'takeaway_charge' => $transaction->takeaway_charge,
+                'total_price' => $transaction->total_price,
 
-    //     }catch(Exception $error){
-    //         return ResponseFormatter::error([
-    //             'message' => 'Semething Happened',
-    //             'error' => $error,
-    //             'code' => 500
-    //         ]);
-    //     }
-    // }
+            ];
+            $result = [
+                'transaction_type' => $transaction->transaction_type,
+                'items' => $transaction->items,
+                'Summary' => $summary
 
-// START API DEVELOPMENTS v2
-    // public function validationcart(Request $request)
-    // {
-    //     try {
-    //         $request->validate([
-    //             'items' => 'required|array',
-    //             'items.*.id' => 'required|exists:products,id',
-    //             'items.*.quantity' => 'required|min:1',
-    //             'items.*.note' => 'nullable'
-    //         ]);
+            ];
+            return ResponseFormatter::success($result, "History Transaction untuk Id {$transaction->id} berhasil ditemukan");
+
+        }catch(Exception $error){
+            return ResponseFormatter::error([
+                'message' => 'Semething Happened',
+                'error' => $error,
+                'code' => 500
+            ]);
+        }
+    }
+
+
+
 
 }
