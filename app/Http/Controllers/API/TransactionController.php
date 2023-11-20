@@ -24,18 +24,20 @@ class TransactionController extends Controller
 {
     use FilterByDate;
 
-    //Function for handle API get all history user transaction
     /**
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function index(Request $request)
+
+    
+    /* Method For GET Histories Transactions */
+    public function histories(Request $request)
     {
         $user = Auth::user()->id;
         try {
 
-            $unpaidTransactions = Transaction::with('items.product')->where('users_id', $user)->where('status_payment', 'UNPAID')->orderBy('created_at', 'desc')->get();
-            $paidTransactions = Transaction::with('items.product')->where('users_id', $user)->where('status_payment', 'PAID')->orderBy('created_at', 'desc')->get();
+            $unpaidTransactions = Transaction::with('items.product.merchant')->where('users_id', $user)->where('status_payment', 'UNPAID')->orderBy('created_at', 'desc')->get();
+            $paidTransactions = Transaction::with('items.product.merchant')->where('users_id', $user)->where('status_payment', 'PAID')->orderBy('created_at', 'desc')->get();
             if ($unpaidTransactions->isEmpty() && $paidTransactions->isEmpty()) {
                 return ResponseFormatter::error(null, 'Transactions Not Found', 400);
             } elseif ($paidTransactions->isNotEmpty()) {
@@ -377,4 +379,31 @@ class TransactionController extends Controller
             ]);
         }
     }
+
+    // public function history(Request $request){
+    //     $id = $request->route('id');
+    //     try{
+    //         $transaction = Transaction::where('id', $id)->first();
+    //         $summary = [
+    //             'id_transaction' => $transaction->id,
+    //             'time' => $transaction
+    //         ];
+    //         $result = [
+    //             'transaction_type' => $transaction->transaction_type,
+    //             'items' => $transaction->item,
+    //             'Summary' => $summary
+
+    //         ];
+    //         return ResponseFormatter::success($transaction, "History Transaction untuk Id {$transaction->id} berhasil ditemukan");
+
+    //     }catch(Exception $error){
+    //         return ResponseFormatter::error([
+    //             'message' => 'Semething Happened',
+    //             'error' => $error,
+    //             'code' => 500
+    //         ]);
+    //     }
+    // }
+
+
 }
