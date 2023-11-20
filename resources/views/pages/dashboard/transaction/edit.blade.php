@@ -89,8 +89,8 @@
                                         <select name="payment_type" class="appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-200 rounded py-2 px-2 leading-tight focus:outline-none focus:bg-white focus:border-gray-500" id="grid-last-name">
                                             <option value="{{ $item->payment_type }}">{{ $item->payment_type }}</option>
                                             <option disabled>-------</option>
-                                            <option value="bayar_sekarang">bayar_sekarang</option>
-                                            <option value="bayar_nanti">bayar_nanti</option>
+                                            <option value="BAYAR_SEKARANG">BAYAR_SEKARANG</option>
+                                            <option value="BAYAR_DITEMPAT">BAYAR_DITEMPAT</option>
                                         </select>
                                     </td>
                                 </tr>
@@ -169,6 +169,7 @@
             </div>
         </div>
     </div>
+    {{-- {{ dd($item) }} --}}
     <script src="https://cdn.ckeditor.com/4.16.0/standard/ckeditor.js"></script>
     <script>
         CKEDITOR.replace('description');
