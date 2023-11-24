@@ -108,7 +108,7 @@ class TransactionController extends Controller
     }
 
     /* Helper For Detail Transaction */
-    public function getDetailTransactions($id){
+    public function getDetailTransactionById($id){
         return Transaction::with('items.product.merchant')->where('id', $id)->first();
     }
 
@@ -118,7 +118,7 @@ class TransactionController extends Controller
     /* Method For GET Histories Transactions */
     public function histories(Request $request)
     {
-        $user = Auth::user()->id;
+        $user = Auth::user();
         try {
 
             $unpaidTransactions = Transaction::with('items.product.merchant')->where('users_id', $user)->where('status_payment', 'UNPAID')->orderBy('created_at', 'desc')->get();
@@ -247,17 +247,22 @@ class TransactionController extends Controller
         try{
             $id = $request->route('id');
         $request->validate([
-            'payment_image' => 'required|image|mimes:jpeg,jpg,png,svg|max:2048'
+            'payment_image' => 'required|image|mimes:jpeg,jpg,png,svg'
         ]);
+        
         $paymentImage = $request->file('payment_image');
-        $transaction = Transaction::with('items.product.merchant')->where('id', $id)->first();
+        $transaction = $this->getDetailTransactionById($id);
         if ($request->hasFile('payment_image')) {
             $transaction->payment_image = $paymentImage->store('public/transactions');
             $transaction->save();
         };
         return ResponseFormatter::success($transaction,'success');
-        }catch(\Throwable $th){
-            return ResponseFormatter::error($th, 'Something Happen', 500 );
+        }catch(Exception $error){
+            return ResponseFormatter::error([
+                'message' => 'Something Happened',
+                'error' => $error->getMessage(),
+                'code' => '500'
+            ]);
         }
         
     }
@@ -268,7 +273,7 @@ class TransactionController extends Controller
         $user = Auth::user();
         $id = $request->route('id');
         try {
-            $transactions = Transaction::with('items.product.merchant')->where('id', $id)->first();
+            $transactions = $this->getDetailTransactionById($id);
             if (!empty($transactions)) {
                 $merchantQR = $transactions['items']['0']['product']['merchant']['qris_path'];
                 $totalPrice = $transactions['total_price'];
@@ -300,7 +305,7 @@ class TransactionController extends Controller
 
     public function detailTransaction($idTransaction){
         try{
-            $transaction= $this->getDetailTransactions($idTransaction);
+            $transaction= $this->getDetailTransactionById($idTransaction);
             $expiredTime = $transaction->created_at->addMinutes(15);
 
             $summary = [
@@ -337,7 +342,7 @@ class TransactionController extends Controller
     public function history($idTransaction){
         // $id = $request->route('id');
         try{
-            $transaction = $this->getDetailTransactions($idTransaction);
+            $transaction = $this->getDetailTransactionById($idTransaction);
             $summary = [
                 'id_transaction' => $transaction->id,
                 'time' => $transaction->created_at->format('H:i:s'),
