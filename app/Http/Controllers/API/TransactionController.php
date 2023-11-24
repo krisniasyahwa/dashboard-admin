@@ -111,31 +111,51 @@ class TransactionController extends Controller
     public function getDetailTransactionById($id){
         return Transaction::with('items.product.merchant')->where('id', $id)->first();
     }
-
-
-
     
     /* Method For GET Histories Transactions */
+    public function resultHistories($transaction){
+        $merchant = $transaction->items->first()->product->merchant;
+        $sumQuantity = $transaction->items->sum('quantity');
+        return [
+            'id' => $transaction->id,
+            'status' => $transaction->status,
+            'status_payment' => $transaction->status_payment,
+            'merchant' => $merchant,
+            'sum_quantity' => $sumQuantity,
+            'items' => $transaction->items,
+            'total_price' => $transaction->total_price
+        ];
+    }
+
     public function histories(Request $request)
     {
         $user = Auth::user();
         try {
 
-            $unpaidTransactions = Transaction::with('items.product.merchant')->where('users_id', $user)->where('status_payment', 'UNPAID')->orderBy('created_at', 'desc')->get();
-            $paidTransactions = Transaction::with('items.product.merchant')->where('users_id', $user)->where('status_payment', 'PAID')->orderBy('created_at', 'desc')->get();
+            $unpaidTransactions = Transaction::with('items.product.merchant')->where('users_id', $user->id)->where('status_payment', 'UNPAID')->orderBy('created_at', 'desc')->get();
+            $paidTransactions = Transaction::with('items.product.merchant')->where('users_id', $user->id)->where('status_payment', 'PAID')->orderBy('created_at', 'desc')->get();
             if ($unpaidTransactions->isEmpty() && $paidTransactions->isEmpty()) {
                 return ResponseFormatter::error(null, 'Transactions Not Found', 400);
             } elseif ($paidTransactions->isNotEmpty()) {
                 if ($unpaidTransactions->isNotEmpty()) {
                     $transactions = $unpaidTransactions->concat($paidTransactions);
-                    return ResponseFormatter::success($transactions, 'Success');
+                    foreach($transactions as $transaction){
+                        $result[] = $this->resultHistories($transaction);
+                      }
+                    return ResponseFormatter::success($result, 'Success');
                 } else {
                     $transactions = $paidTransactions;
-                    return ResponseFormatter::success($transactions, 'Success');
+                    foreach($transactions as $transaction){
+                        $result[] = $this->resultHistories($transaction);
+                    }
+                    return ResponseFormatter::success($result, 'Success');
                 }
             } else {
-                $transactions = $unpaidTransactions;
-                return ResponseFormatter::success($transactions, 'success');
+                $transactions = $unpaidTransactions;              
+                foreach($transactions as $transaction){
+                  $result[] = $this->resultHistories($transaction);
+                }
+                return ResponseFormatter::success($result, 'success');
             }
         } catch (\Throwable $th) {
             return ResponseFormatter::error($th, 'Something Happen', 500);
@@ -249,7 +269,7 @@ class TransactionController extends Controller
         $request->validate([
             'payment_image' => 'required|image|mimes:jpeg,jpg,png,svg'
         ]);
-        
+
         $paymentImage = $request->file('payment_image');
         $transaction = $this->getDetailTransactionById($id);
         if ($request->hasFile('payment_image')) {
@@ -372,6 +392,18 @@ class TransactionController extends Controller
     }
 
 
-
+    public function pass($idTransaction){
+        try{
+            $transaction = $this->getDetailTransactionById($idTransaction);
+            return ResponseFormatter::success($transaction, 'Success');
+        }catch(Exception $error){
+            return ResponseFormatter::error([
+                'message' => 'Something Happened',
+                'error' => $error->getMessage(),
+                'code' => 500
+            ]);
+        }
+        
+    }
 
 }
