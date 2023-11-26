@@ -211,6 +211,8 @@ class TransactionController extends Controller
                     $transaction->save();
                     return ResponseFormatter::error(null, 'Transaction Expired', 400);
                 }
+            } else if ($transaction && $transaction->payment_status === 'EXPIRED'){
+                return ResponseFormatter::error(null, 'Transaction Expired', 400);
             } else if ($transaction) {
                 $transaction->payment_image = $paymentImage->store('public/transactions');
                 $transaction->status_payment = 'REVIEW';
