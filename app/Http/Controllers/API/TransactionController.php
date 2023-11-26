@@ -383,7 +383,7 @@ class TransactionController extends Controller
                 if ($now->greaterThan($expired)) {
                     $transaction->status = 'EXPIRED';
                     $transaction->save();
-                    return ResponseFormatter::error(null, 'Transaction Expired', 400);
+                    return ResponseFormatter::error($transaction, 'Transaction Expired', 400);
                 } else {
                     $transaction->expired_at = $expired;
                     return ResponseFormatter::success($transaction, 'Success');
