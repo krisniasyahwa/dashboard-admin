@@ -201,7 +201,7 @@ class TransactionController extends Controller
                 return ResponseFormatter::error(null, 'payment_image Not Found', 400);
             }
 
-            if ($transaction && $transaction->payment_status === 'EXPIRED'){
+            if ($transaction && $transaction->status === 'EXPIRED'){
                 return ResponseFormatter::error(null, 'Transaction Expired', 400);
             }
 
