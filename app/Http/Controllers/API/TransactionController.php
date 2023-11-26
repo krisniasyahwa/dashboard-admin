@@ -67,8 +67,11 @@ class TransactionController extends Controller
             $subtotal = 0;
             
             foreach ($productData as $product) {
+                // Handle condition if promo price is null, 0 or less than price
+                $productPrice = ($product['promo_price'] > 0 && $product['promo_price'] <= $product['price'] ) ? $product['promo_price'] : $product['price'];
+
                 $quantity = $product['quantity'];
-                $price = ($product['promo_price'] <= $product['price']) ? $product['promo_price'] : $product['price'];
+                $price = $productPrice;
                 $calculation = $quantity * $price;
                 $subtotal += $calculation;
             }
@@ -83,8 +86,11 @@ class TransactionController extends Controller
             $subtotal = 0;
             $total_takeaway_charge = 0;
             foreach ($productData as $product) {
+                // Handle condition if promo price is null, 0 or less than price
+                $productPrice = ($product['promo_price'] > 0 && $product['promo_price'] <= $product['price'] ) ? $product['promo_price'] : $product['price'];
+
                 $quantity = $product['quantity'];
-                $price = ($product['promo_price'] <= $product['price']) ? $product['promo_price'] : $product['price'];
+                $price = $productPrice;
                 $takeaway_charge = $product['takeaway_charge'];
                 $calculation = $quantity * $price;
                 $takeaway = $quantity * $takeaway_charge;
