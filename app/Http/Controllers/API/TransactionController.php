@@ -201,6 +201,10 @@ class TransactionController extends Controller
                 return ResponseFormatter::error(null, 'payment_image Not Found', 400);
             }
 
+            if ($transaction && $transaction->payment_status === 'EXPIRED'){
+                return ResponseFormatter::error(null, 'Transaction Expired', 400);
+            }
+
             // If transaction status is pending, check if transaction is expired or not
             if ($transaction && $transaction->payment_type === 'BAYAR_SEKARANG' && $transaction->status === 'PENDING') {
                 $now = Carbon::now();
@@ -211,8 +215,6 @@ class TransactionController extends Controller
                     $transaction->save();
                     return ResponseFormatter::error(null, 'Transaction Expired', 400);
                 }
-            } else if ($transaction && $transaction->payment_status === 'EXPIRED'){
-                return ResponseFormatter::error(null, 'Transaction Expired', 400);
             } else if ($transaction) {
                 $transaction->payment_image = $paymentImage->store('public/transactions');
                 $transaction->status_payment = 'REVIEW';
