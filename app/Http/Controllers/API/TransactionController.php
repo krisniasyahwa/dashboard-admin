@@ -214,12 +214,12 @@ class TransactionController extends Controller
                     $transaction->status = 'EXPIRED';
                     $transaction->save();
                     return ResponseFormatter::error(null, 'Transaction Expired', 400);
+                } else {
+                    $transaction->payment_image = $paymentImage->store('public/transactions');
+                    $transaction->status_payment = 'REVIEW';
+                    $transaction->save();
+                    return ResponseFormatter::success($transaction, 'Payment Image Uploaded');
                 }
-            } else if ($transaction) {
-                $transaction->payment_image = $paymentImage->store('public/transactions');
-                $transaction->status_payment = 'REVIEW';
-                $transaction->save();
-                return ResponseFormatter::success($transaction, 'Payment Image Uploaded');
             } else {
                 return ResponseFormatter::error(null, 'Transaction Not Found', 404);
             }
