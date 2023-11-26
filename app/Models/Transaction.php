@@ -13,6 +13,7 @@ class Transaction extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'merchants_id',
         'users_id',
         'address',
         'total_price',
@@ -34,6 +35,11 @@ class Transaction extends Model
     public function items()
     {
         return $this->hasMany(TransactionItem::class, 'transactions_id', 'id');
+    }
+
+    public function merchant()
+    {
+        return $this->belongsTo(Merchant::class, 'merchants_id', 'id');
     }
 
     public function getPaymentImageAttribute($path){

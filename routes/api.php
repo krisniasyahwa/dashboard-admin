@@ -24,15 +24,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('user', [UserController::class, 'fetch']); 
     Route::post('user', [UserController::class, 'updateProfile']); 
     Route::post('logout', [UserController::class, 'logout']); 
-    Route::get('transactions/histories', [TransactionController::class, 'histories'])->name('histories');
-    Route::get('transactions/{id}/histories', [TransactionController::class, 'history']);
-    Route::get('transactions/merchants', [TransactionController::class, 'merchants']);
-    Route::get('transactions/{id}/confirmation', [TransactionController::class, 'confirmation']);
-    Route::get('transactions/{id}/detailtransaction', [TransactionController::class, 'detailTransaction']);
-    Route::post('transactions/{id}/payments', [TransactionController::class, 'confirmpayment']);
-    Route::post('transactions/checkout', [TransactionController::class, 'checkout']);
+
+    Route::get('transactions', [TransactionController::class, 'index']);
+    Route::get('transactions/{id}', [TransactionController::class, 'show']);
+    Route::post('transactions', [TransactionController::class, 'store']);
     Route::post('transactions/validation', [TransactionController::class, 'validation']);
-    Route::get('transactions/{id}/pass', [TransactionController::class, 'pass']);
+
+    Route::get('transactions/{id}/payment', [TransactionController::class, 'paymentInformation']);
+    Route::post('transactions/{id}/payment', [TransactionController::class, 'paymentConfirmation']);
+
     Route::post('merchants', [MerchantController::class, 'store']);
     Route::delete('merchants/{slug}', [MerchantController::class, 'destroy']);
 });
@@ -45,7 +45,7 @@ Route::get('merchants/{id}/products', [MerchantController::class, 'products']);
 
 Route::get('products', [ProductController::class, 'all']);
 Route::get('products/bestseller', [ProductController::class, 'bestSeller']);
-Route::get('products/randomproducts', [ProductController::class, 'randomProducts']);
+Route::get('products/random', [ProductController::class, 'randomProducts']);
 Route::get('products/featureImage', [ProductController::class, 'featureImage']);
 Route::get('categories', [ProductCategoryController::class, 'all']);
 

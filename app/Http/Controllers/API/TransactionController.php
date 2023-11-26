@@ -55,7 +55,7 @@ class TransactionController extends Controller
                 'promo_price' => $product->promo_price,
                 'takeaway_charge' => $product->takeway_charge,
                 'note' => $note,
-                // 'merchant_id' => $product->merchant,
+                'merchant' => $product->merchant,
                 'category' => $product->category,
                 'galleries' => $product->galleries,
                 // 'featured_image' => $product->featured_image,
@@ -131,9 +131,9 @@ class TransactionController extends Controller
     {
         $user = Auth::user();
         try {
-
             $unpaidTransactions = Transaction::with('items.product.merchant')->where('users_id', $user->id)->where('status_payment', 'UNPAID')->orderBy('created_at', 'desc')->get();
             $paidTransactions = Transaction::with('items.product.merchant')->where('users_id', $user->id)->where('status_payment', 'PAID')->orderBy('created_at', 'desc')->get();
+
             if ($unpaidTransactions->isEmpty() && $paidTransactions->isEmpty()) {
                 return ResponseFormatter::error(null, 'Transactions Not Found', 400);
             } elseif ($paidTransactions->isNotEmpty()) {
@@ -156,82 +156,6 @@ class TransactionController extends Controller
                   $result[] = $this->resultHistories($transaction);
                 }
                 return ResponseFormatter::success($result, 'success');
-            }
-        } catch (\Throwable $th) {
-            return ResponseFormatter::error($th, 'Something Happen', 500);
-        }
-    }
-
-    //Function for handle API checkout transaction after validation transaction
-    /**
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-
-    public function checkout(Request $request)
-    {
-        $user = Auth::user();
-        $request->validate([
-            'transaction_type' => 'required|in:DINE_IN,TAKEAWAY',
-            'payment_type' => 'required|in:BAYAR_SEKARANG,BAYAR_DITEMPAT',
-            'payment' => 'required|in:QRIS,CASH',
-            'items' => 'required|array',
-            'items.*.id' => 'required|exists:products,id',
-            'items.*.quantity' => 'required|min:1',
-            'items.*.note' => 'nullable',
-        ]);
-
-        try {  
-            $transactionValidated = $this->validationHelper($request);
-          
-            switch ($request->transaction_type) {
-                case 'TAKEAWAY':
-                    $transaction = Transaction::create([
-                        'users_id' => $user->id,
-                        'transaction_type' => $request->transaction_type,
-                        'takeaway_charge' => $transactionValidated['Summary']['takeaway_charge'],
-                        'total_price' => $transactionValidated['Summary']['total'],
-                        'status' => 'PENDING',
-                        'payment' => $request->payment,
-                        'payment_type' => $request->payment_type
-                    ]);
-
-
-                    foreach($request->items as $item){
-                        TransactionItem::create([
-                            'users_id' => $user->id,
-                            'products_id' => $item['id'],
-                            'quantity' => $item['quantity'],
-                            'transactions_id' => $transaction->id,
-                            'note' => $item['note']
-                        ]);
-                    }
-                    return ResponseFormatter::success($transaction->load('items.product'), 'Checkout Berhasil');
-                    break;
-                case 'DINE_IN':
-                    $transaction = Transaction::create([
-                        'users_id' => $user->id,
-                        'transaction_type' => $request->transaction_type,
-                        'takeaway_charge' => 0,
-                        'total_price' => $transactionValidated['Summary']['total'],
-                        'status' => 'PENDING',
-                        'payment' => $request->payment,
-                        'payment_type' => $request->payment_type
-                    ]);
-                    foreach($request->items as $item){
-                        TransactionItem::create([
-                            'users_id' => $user->id,
-                            'products_id' => $item['id'],
-                            'quantity' => $item['quantity'],
-                            'transactions_id' => $transaction->id,
-                            'note' => $item['note']
-                        ]);
-                    }
-                    return ResponseFormatter::success($transaction->load('items.product'), 'Checkout Berhasil');
-                    break;
-                default:
-                    return ResponseFormatter::error(null, 'Transaction Type Not Found', 400);
-                    break;
             }
         } catch (\Throwable $th) {
             return ResponseFormatter::error($th, 'Something Happen', 500);
@@ -262,55 +186,66 @@ class TransactionController extends Controller
 
 
     //Function for handle API confirmation payment with upload QR Image
-    public function confirmpayment(Request $request)
+    public function paymentConfirmation($id, Request $request)
     {
-        try{
-            $id = $request->route('id');
         $request->validate([
             'payment_image' => 'required|image|mimes:jpeg,jpg,png,svg'
         ]);
 
-        $paymentImage = $request->file('payment_image');
-        $transaction = $this->getDetailTransactionById($id);
-        if ($request->hasFile('payment_image')) {
-            $transaction->payment_image = $paymentImage->store('public/transactions');
-            $transaction->save();
-        };
-        return ResponseFormatter::success($transaction,'success');
-        }catch(Exception $error){
+        try{
+            $user = Auth::user();
+            $paymentImage = $request->file('payment_image');
+            $transaction = Transaction::where('users_id', $user->id)->where('id', $id)->first();
+
+            if (!$paymentImage) {
+                return ResponseFormatter::error(null, 'payment_image Not Found', 400);
+            }
+
+            // If transaction status is pending, check if transaction is expired or not
+            if ($transaction && $transaction->payment_type === 'BAYAR_SEKARANG' && $transaction->status === 'PENDING') {
+                $now = Carbon::now();
+                $expired = $transaction->created_at->addMinutes(15);
+
+                if ($now->greaterThan($expired)) {
+                    $transaction->status = 'EXPIRED';
+                    $transaction->save();
+                    return ResponseFormatter::error(null, 'Transaction Expired', 400);
+                }
+            } else if ($transaction) {
+                $transaction->payment_image = $paymentImage->store('public/transactions');
+                $transaction->status_payment = 'REVIEW';
+                $transaction->save();
+                return ResponseFormatter::success($transaction, 'Payment Image Uploaded');
+            } else {
+                return ResponseFormatter::error(null, 'Transaction Not Found', 404);
+            }
+        } catch (Exception $error) {
             return ResponseFormatter::error([
                 'message' => 'Something Happened',
-                'error' => $error->getMessage(),
-                'code' => '500'
+                'error' => $error,
+                'code' => 500,
             ]);
         }
         
     }
 
     //Function for handle API confirmation transaction before payment
-    public function confirmation(Request $request)
+    public function paymentInformation($id)
     {
-        $user = Auth::user();
-        $id = $request->route('id');
         try {
-            $transactions = $this->getDetailTransactionById($id);
-            if (!empty($transactions)) {
-                $merchantQR = $transactions['items']['0']['product']['merchant']['qris_path'];
-                $totalPrice = $transactions['total_price'];
-                $createdAt = $transactions->created_at->format('H:i:s');
-                // Parse the 'H:i:s' string into a DateTime object
-                $createdAtDateTime = Carbon::createFromFormat('H:i:s', $createdAt);
-                // Add 15 minutes to the DateTime object
-                $createdAtDateTime->addMinutes(15);
-                $expiredAt = $createdAtDateTime->format('H:i:s');
-                $expiredAtDateTime = Carbon::createFromFormat('H:i:s', $expiredAt);
+            $user = Auth::user();
+            $transactions = Transaction::with('merchant')->where('users_id', $user->id)->where('id', $id)->first();
+
+            if ($transactions && $transactions->status === 'PENDING' && $transactions->status_payment === 'UNPAID' && $transactions->payment_type === 'BAYAR_SEKARANG') {
                 $result = [
-                    'total_price' => $totalPrice,
-                    'qr' => $merchantQR,
-                    'created' => $createdAtDateTime,
-                    'expired' => $expiredAtDateTime->addMinutes(15)
+                    'total_price' => $transactions->total_price,
+                    'qr' => $transactions->merchant->qris_path,
+                    'created' => $transactions->created_at,
+                    'expired' => $transactions->created_at->addMinutes(15),
                 ];
                 return ResponseFormatter::success($result, 'Data Found');
+            } else {
+                return ResponseFormatter::error(null, 'Transaction Not Found', 404);
             }
         } catch (Exception $error) {
             return ResponseFormatter::error([
@@ -320,8 +255,6 @@ class TransactionController extends Controller
             ]);
         }
     }
-
-   
 
     public function detailTransaction($idTransaction){
         try{
@@ -357,7 +290,6 @@ class TransactionController extends Controller
                         ]);
         }
     }
-
 
     public function history($idTransaction){
         // $id = $request->route('id');
@@ -405,5 +337,137 @@ class TransactionController extends Controller
         }
         
     }
+
+    /**
+     * Display a listing of the transaction.
+     * @return \Illuminate\Http\Response
+     */
+
+    public function index()
+    {
+        try {
+            $user = Auth::user();
+            $transactions = Transaction::with('merchant')->with('items.product')->where('users_id', $user->id)->get();
+
+            if($transactions->isEmpty()){
+                return ResponseFormatter::error(null, 'Transaction Not Found', 404);
+            }
+
+            return ResponseFormatter::success($transactions, 'Success');
+        } catch (\Throwable $th) {
+            return ResponseFormatter::error($th, 'Something Happen', 500);
+        }
+    }
+
+    /**
+     * Display the specified transaction.
+     * @param $id
+     * @return \Illuminate\Http\Response
+     */
+
+    public function show($id)
+    {
+        try {
+            $user = Auth::user();
+            $transaction = Transaction::with('merchant')->with('items.product')->where('users_id', $user->id)->where('id', $id)->first();
+
+            // If transaction status is pending, check if transaction is expired or not
+            if ($transaction && $transaction->status_payment === 'UNPAID') {
+                $now = Carbon::now();
+                $expired = $transaction->created_at->addMinutes(15);
+
+                if ($now->greaterThan($expired)) {
+                    $transaction->status = 'EXPIRED';
+                    $transaction->save();
+                    return ResponseFormatter::error(null, 'Transaction Expired', 400);
+                } else {
+                    $transaction->expired_at = $expired;
+                    return ResponseFormatter::success($transaction, 'Success');
+                }
+            } else if ($transaction) {
+                return ResponseFormatter::success($transaction, 'Success');
+            } else {
+                return ResponseFormatter::error(null, 'Transaction Not Found', 404);
+            }
+        } catch (\Throwable $th) {
+            return ResponseFormatter::error($th, 'Something Happen', 500);
+        }
+    }
+
+    //Function for handle API checkout transaction after validation transaction
+    /**
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+     public function store(Request $request)
+     {
+         $user = Auth::user();
+         $request->validate([
+             'transaction_type' => 'required|in:DINE_IN,TAKEAWAY',
+             'payment_type' => 'required|in:BAYAR_SEKARANG,BAYAR_DITEMPAT',
+             'payment' => 'required|in:QRIS,CASH',
+             'items' => 'required|array',
+             'items.*.id' => 'required|exists:products,id',
+             'items.*.quantity' => 'required|min:1',
+             'items.*.note' => 'nullable',
+         ]);
+ 
+         try {  
+             $transactionValidated = $this->validationHelper($request);
+           
+             switch ($request->transaction_type) {
+                 case 'TAKEAWAY':
+                     $transaction = Transaction::create([
+                         'merchants_id' => $transactionValidated['merchant']['id'],
+                         'users_id' => $user->id,
+                         'transaction_type' => $request->transaction_type,
+                         'takeaway_charge' => $transactionValidated['Summary']['takeaway_charge'],
+                         'total_price' => $transactionValidated['Summary']['total'],
+                         'status' => 'PENDING',
+                         'payment' => $request->payment,
+                         'payment_type' => $request->payment_type
+                     ]);
+ 
+                     foreach($request->items as $item){
+                         TransactionItem::create([
+                             'users_id' => $user->id,
+                             'products_id' => $item['id'],
+                             'quantity' => $item['quantity'],
+                             'transactions_id' => $transaction->id,
+                             'note' => $item['note']
+                         ]);
+                     }
+                     return ResponseFormatter::success($transaction->load('items.product'), 'Checkout Berhasil');
+                     break;
+                 case 'DINE_IN':
+                     $transaction = Transaction::create([
+                         'merchants_id' => $transactionValidated['merchant']['id'], 
+                         'users_id' => $user->id,
+                         'transaction_type' => $request->transaction_type,
+                         'takeaway_charge' => 0,
+                         'total_price' => $transactionValidated['Summary']['total'],
+                         'status' => 'PENDING',
+                         'payment' => $request->payment,
+                         'payment_type' => $request->payment_type
+                     ]);
+                     foreach($request->items as $item){
+                         TransactionItem::create([
+                             'users_id' => $user->id,
+                             'products_id' => $item['id'],
+                             'quantity' => $item['quantity'],
+                             'transactions_id' => $transaction->id,
+                             'note' => $item['note']
+                         ]);
+                     }
+                     return ResponseFormatter::success($transaction->load('items.product'), 'Checkout Berhasil');
+                     break;
+                 default:
+                     return ResponseFormatter::error(null, 'Transaction Type Not Found', 400);
+                     break;
+             }
+         } catch (\Throwable $th) {
+             return ResponseFormatter::error($th, 'Something Happen', 500);
+         }
+     }
 
 }
