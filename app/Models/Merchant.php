@@ -43,4 +43,8 @@ class Merchant extends Model
         return $this->hasMany(MerchantsVoucher::class, 'merchants_id', 'id');
     }
 
+    public function transactions(){
+        return $this->hasMany(Transaction::class, 'merchants_id', 'id');
+    }
+
 }
