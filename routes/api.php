@@ -34,6 +34,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     Route::post('merchants', [MerchantController::class, 'store']);
     Route::delete('merchants/{slug}', [MerchantController::class, 'destroy']);
+    Route::get('products/restore', [ProductController::class, 'restore']);
 });
 
 

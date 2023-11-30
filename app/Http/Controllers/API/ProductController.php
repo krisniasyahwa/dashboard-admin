@@ -48,7 +48,6 @@ class ProductController extends Controller
         //Join product table, category table, galleries table
         $product = Product::with(['category', 'galleries', 'featured_image', 'promo']);
 
-        //if name request is not null, use where like to search product name
         if ($name)
             $product->where('name', 'like', '%' . $name . '%');
         //if description request is not null, use where like to search product description
@@ -69,8 +68,6 @@ class ProductController extends Controller
         //if merchants request is not null, use where like to search product merchants
         if ($merchants)
             $product->where('merchants_id', $merchants);
-        // if ($promo)
-        //     $product->where('promo_id', $promo);
 
         //if count product is o, return error response, with message "Data list produk kosong", and status code 404
         if ($product->count() == 0) {
@@ -149,5 +146,41 @@ class ProductController extends Controller
             ], 'Authentication Failed', 500);
 
         }
+    }
+
+    public function restore(Request $request){
+        $id = $request->input('id');
+        try{
+            if(!$id){
+                $product = Product::onlyTrashed()->get();
+                $count = $product->count();
+                if(!$product){
+                    return ResponseFormatter::error($product, 'Product with id {{$id}}', 400);
+            }
+            }else{
+                $restoredProduct = Product::onlyTrashed()->find($id);
+                $restoredProduct->restore();
+                $recycleBinProduct = Product::onlyTrashed()->get();
+                if(!$restoredProduct){
+                    return ResponseFormatter::error($restoredProduct, 'Product with id {{$id}}', 400);
+                }
+            }
+            
+            $result = [
+                'restoredProduct' => $restoredProduct,
+                'recycleBinProduct' => $recycleBinProduct
+            ];
+            return ResponseFormatter::success($result, 'success');
+
+
+        }catch(Exception $error){
+            [
+                'message' => 'Something Happen',
+                'error' => $error->getMessage(),
+                'code' => 500
+
+            ];
+        }
+        
     }
 }
