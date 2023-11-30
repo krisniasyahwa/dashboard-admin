@@ -184,7 +184,7 @@ class TransactionController extends Controller
         } catch (Exception $error) {
             return ResponseFormatter::error([
                 'message' => 'Something Happened',
-                'error' => $error,
+                'error' => $error->getMessage(),
                 'code' => 500,
             ]);
         }
@@ -423,7 +423,7 @@ class TransactionController extends Controller
  
          try {  
              $transactionValidated = $this->validationHelper($request);
-           
+             
              switch ($request->transaction_type) {
                  case 'TAKEAWAY':
                      $transaction = Transaction::create([
@@ -474,8 +474,11 @@ class TransactionController extends Controller
                      return ResponseFormatter::error(null, 'Transaction Type Not Found', 400);
                      break;
              }
-         } catch (\Throwable $th) {
-             return ResponseFormatter::error($th, 'Something Happen', 500);
+         } catch (Exception $error) {
+             return ResponseFormatter::error([
+                'error' => $error->getMessage(), 
+                'message' => 'Something Happen', 
+                'code' => 500]);
          }
      }
 
