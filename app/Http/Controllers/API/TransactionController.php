@@ -203,7 +203,7 @@ class TransactionController extends Controller
             $paymentImage = $request->file('payment_image');
             $transaction = Transaction::where('users_id', $user->id)->where('id', $id)->first();
 
-            $isPaymentUnpaidOrRejected = $transactions->status_payment === 'UNPAID' || $transactions->status_payment === 'REJECTED';
+            $isPaymentUnpaidOrRejected = $transaction->status_payment === 'UNPAID' || $transaction->status_payment === 'REJECTED';
 
             if (!$paymentImage) {
                 return ResponseFormatter::error(null, 'payment_image Not Found', 400);
@@ -246,16 +246,16 @@ class TransactionController extends Controller
     {
         try {
             $user = Auth::user();
-            $transactions = Transaction::with('merchant')->where('users_id', $user->id)->where('id', $id)->first();
+            $transaction = Transaction::with('merchant')->where('users_id', $user->id)->where('id', $id)->first();
 
-            $isPaymentUnpaidOrRejected = $transactions->status_payment === 'UNPAID' || $transactions->status_payment === 'REJECTED';
+            $isPaymentUnpaidOrRejected = $transaction->status_payment === 'UNPAID' || $transaction->status_payment === 'REJECTED';
 
-            if ($transactions && $transactions->status === 'PENDING' && $isPaymentUnpaidOrRejected && $transactions->payment_type === 'BAYAR_SEKARANG') {
+            if ($transaction && $transaction->status === 'PENDING' && $isPaymentUnpaidOrRejected && $transaction->payment_type === 'BAYAR_SEKARANG') {
                 $result = [
-                    'total_price' => $transactions->total_price,
-                    'qr' => $transactions->merchant->qris_path,
-                    'created' => $transactions->created_at,
-                    'expired' => $transactions->created_at->addMinutes(15),
+                    'total_price' => $transaction->total_price,
+                    'qr' => $transaction->merchant->qris_path,
+                    'created' => $transaction->created_at,
+                    'expired' => $transaction->created_at->addMinutes(15),
                 ];
                 return ResponseFormatter::success($result, 'Data Found');
             } else {
