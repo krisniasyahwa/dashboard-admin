@@ -12,6 +12,16 @@ use Facade\FlareClient\Http\Response;
 
 class ProductController extends Controller
 {
+    /**
+     * @OA\Get(
+     *     path="/products",
+     *     summary="Get All Products",
+     *     tags={"Products"},
+     *     operationId="products",
+     *     @OA\Response(response="200", description="Success"),
+     *     
+     * )
+     */
     public function all(Request $request)
     {
         $id = $request->input('id');
@@ -82,7 +92,16 @@ class ProductController extends Controller
             );
         }
     }
-
+    /**
+     * @OA\Get(
+     * path="/products/bestseller",
+     * tags={"Products"},
+     * operationId="bestseller",
+     * summary="Get Best Seller Products",
+     * @OA\Parameter(name="limit",in="query",description="Adjust Data Limitation",@OA\Schema(type="String")),
+     *  @OA\Response(response=200,description="Success Get Data Best Seller"),
+     * )
+     */
 
 
     //Functioin to get product best seller
@@ -106,6 +125,19 @@ class ProductController extends Controller
         
 
     }
+
+    /**
+     * @OA\Get(
+     * path="/products/random",
+     * summary="Get Random Products",
+     * tags={"Products"},
+     * operationId="randoms",
+     * @OA\Response(
+     * response=200,
+     * description="Success Get Data Random Products",
+     * ),
+     * )
+     */
 
     //Function to get random produt with limit ()
     public function randomProducts(Request $request)

@@ -1,0 +1,75 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Dokumentasi API",
+        "description": "Dokumentasi API menggunakan Swagger Packages",
+        "contact": {
+            "email": "mzhssn313@gmail.com"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8000/api/",
+            "description": "Demo API Server"
+        }
+    ],
+    "paths": {
+        "/products": {
+            "get": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Get All Products",
+                "operationId": "products",
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/products/bestseller": {
+            "get": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Get Best Seller Products",
+                "operationId": "bestseller",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Adjust Data Limitation",
+                        "schema": {
+                            "type": "String"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success Get Data Best Seller"
+                    }
+                }
+            }
+        },
+        "/products/random": {
+            "get": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Get Random Products",
+                "operationId": "randoms",
+                "responses": {
+                    "200": {
+                        "description": "Success Get Data Random Products"
+                    }
+                }
+            }
+        }
+    }
+}
