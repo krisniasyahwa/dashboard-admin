@@ -103,6 +103,17 @@ class ProductController extends Controller
      * )
      */
 
+    /**
+     * @OA\Get(
+     * path="/categories",
+     * tags={"Products By Category"},
+     * operationId="categoriesproduct",
+     * summary="Get Product By Categories",
+     * @OA\Response(response=200,description="Success Get Data"),
+     * )
+     *
+     */
+
 
     //Functioin to get product best seller
     public function bestSeller(Request $request)
@@ -179,6 +190,11 @@ class ProductController extends Controller
 
         }
     }
+
+    /**
+     * 
+     *    
+     */
 
     public function restore(Request $request){
         $id = $request->input('id');

@@ -33,26 +33,16 @@
                 }
             }
         },
-        "/products/bestseller": {
+        "/categories": {
             "get": {
                 "tags": [
-                    "Products"
+                    "Category By Products"
                 ],
-                "summary": "Get Best Seller Products",
-                "operationId": "bestseller",
-                "parameters": [
-                    {
-                        "name": "limit",
-                        "in": "query",
-                        "description": "Adjust Data Limitation",
-                        "schema": {
-                            "type": "String"
-                        }
-                    }
-                ],
+                "summary": "Get Product By Categories",
+                "operationId": "categoriesproduct",
                 "responses": {
                     "200": {
-                        "description": "Success Get Data Best Seller"
+                        "description": "Success Get Data"
                     }
                 }
             }
