@@ -139,16 +139,44 @@ class ProductController extends Controller
 
     /**
      * @OA\Get(
-     * path="/products/random",
-     * summary="Get Random Products",
-     * tags={"Products"},
-     * operationId="randoms",
-     * @OA\Response(
-     * response=200,
-     * description="Success Get Data Random Products",
-     * ),
+     *  path="/products/random",
+     *  summary="Get Random Products",
+     *  tags={"Products"},
+     *  operationId="randoms",
+     *  @OA\Parameter(
+     *      name="limit",
+     *      description="set limitation random product",
+     *      required=false,
+     *      in="query",
+     *      @OA\Schema(
+     *          type="string"
+     *      )
+     *  ),
+     *  @OA\Parameter(
+     *      name="categories",
+     *      description="set random product by categories",
+     *      required=false,
+     *      in="query",
+     *      @OA\Schema(
+     *          type="string",
+     *      ),
+     *  ),
+     *  @OA\Parameter(
+     *      name="merchants",
+     *      description="set random products by merchants",
+     *      required=false,
+     *      in="query",
+     *      @OA\Schema(
+     *          type="string",
+     *      ),
+     *  ), 
+     *  @OA\Response(
+     *      response=200,
+     *      description="Success Get Data Random Products",
+     *      ),
      * )
      */
+
 
     //Function to get random produt with limit ()
     public function randomProducts(Request $request)
@@ -159,8 +187,7 @@ class ProductController extends Controller
 
         try{
             if ($merchants) {
-                $randomProduct = Product::with(['category', 'featured_image', 'galleries', 'promo', 'merchant'])->inRandomOrder()->where('merchants.name','like','%'.$merchants.'%')->where('stock', '>=', 1)->take($limit)->get();
-    
+                $randomProduct = Product::with(['category', 'featured_image', 'galleries', 'promo', 'merchant'])->inRandomOrder()->where('stock','>=',1)->where('merchants_id',$merchants)->take($limit)->get();
                 if ($randomProduct->count() != 0) {
                     return ResponseFormatter::success($randomProduct, "Data list produk random berhasil diambil");
                 } else {
@@ -168,7 +195,7 @@ class ProductController extends Controller
                 }
             }
             if ($categories) {
-                $randomProduct = Product::with(['category', 'featured_image', 'galleries', 'promo', 'merchant'])->inRandomOrder()->where('categories_id', $categories)->where('stock', '>=', 1)->take($limit)->get();
+                $randomProduct = Product::with(['category', 'featured_image', 'galleries', 'promo', 'merchant'])->inRandomOrder()->where('stock','>=',1)->where('categories_id',$categories)->take($limit)->get();
                 if ($randomProduct->count() != 0) {
                     return ResponseFormatter::success($randomProduct, "Data list produk random berhasil diambil");
                 } else {

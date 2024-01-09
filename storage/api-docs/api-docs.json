@@ -36,7 +36,7 @@
         "/categories": {
             "get": {
                 "tags": [
-                    "Category By Products"
+                    "Products By Category"
                 ],
                 "summary": "Get Product By Categories",
                 "operationId": "categoriesproduct",
@@ -54,6 +54,35 @@
                 ],
                 "summary": "Get Random Products",
                 "operationId": "randoms",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "set limitation random product",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "categories",
+                        "in": "query",
+                        "description": "set random product by categories",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "merchants",
+                        "in": "query",
+                        "description": "set random products by merchants",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Success Get Data Random Products"
