@@ -18,6 +18,11 @@ class ProductController extends Controller
      *     summary="Get All Products",
      *     tags={"Products"},
      *     operationId="products",
+     *     @OA\Parameter(name="name",in="query",description="Show Data By Name",@OA\Schema(type="String")),
+     *     @OA\Parameter(name="description",in="query",description="Show Data By Keyword description",@OA\Schema(type="String")),
+     *     @OA\Parameter(name="categories",in="query",description="Show Data By Categories Id",@OA\Schema(type="String")),
+     *     @OA\Parameter(name="merchants",in="query",description="Show Data By Merchants Id",@OA\Schema(type="String")),
+     *     @OA\Parameter(name="limit",in="query",description="Filter Limitation Products",@OA\Schema(type="String")),
      *     @OA\Response(response="200", description="Success"),
      *     
      * )

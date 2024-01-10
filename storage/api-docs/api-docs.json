@@ -26,6 +26,48 @@
                 ],
                 "summary": "Get All Products",
                 "operationId": "products",
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "query",
+                        "description": "Show Data By Name",
+                        "schema": {
+                            "type": "String"
+                        }
+                    },
+                    {
+                        "name": "description",
+                        "in": "query",
+                        "description": "Show Data By Keyword description",
+                        "schema": {
+                            "type": "String"
+                        }
+                    },
+                    {
+                        "name": "categories",
+                        "in": "query",
+                        "description": "Show Data By Categories Id",
+                        "schema": {
+                            "type": "String"
+                        }
+                    },
+                    {
+                        "name": "merchants",
+                        "in": "query",
+                        "description": "Show Data By Merchants Id",
+                        "schema": {
+                            "type": "String"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Filter Limitation Products",
+                        "schema": {
+                            "type": "String"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Success"
