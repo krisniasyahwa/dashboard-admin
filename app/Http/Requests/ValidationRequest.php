@@ -2,36 +2,31 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Http\FormRequest;
 
-class TransactionRequest extends FormRequest
+class ValidationRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * @return bool
      */
-    public function authorize()
+    public function authorize(): bool
     {
-        return Auth::check();
+        return true;
     }
 
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
-    public function rules()
+    public function rules(): array
     {
         return [
             'transaction_type' => 'required|in:DINE_IN,TAKEAWAY',
-            'payment_type' => 'required|in:BAYAR_SEKARANG,BAYAR_DITEMPAT',
-            'payment' => 'required|in:QRIS,CASH',
             'items' => 'required|array',
             'items.*.id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|min:1',
-            'items.*.note' => 'nullable',
+            'items.*.note' => 'nullable'
         ];
     }
 }
