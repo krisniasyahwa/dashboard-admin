@@ -1,5 +1,6 @@
 <?php
-namespace App\Http\Requests;
+
+namespace App\Http\Requests\API;
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Http\FormRequest;
@@ -24,12 +25,13 @@ class TransactionRequest extends FormRequest
     public function rules()
     {
         return [
-            'status' => 'in:PENDING,PROCESS,READY,SUCCESS',
-            'status_payment' => 'in:UNPAID,REVIEW,PAID,REJECTED,EXPIRED',
-            'payment_image' => 'nullable|image',
             'transaction_type' => 'required|in:DINE_IN,TAKEAWAY',
             'payment_type' => 'required|in:BAYAR_SEKARANG,BAYAR_DITEMPAT',
-            'payment' => 'required|in:QRIS,CASH'
+            'payment' => 'required|in:QRIS,CASH',
+            'items' => 'required|array',
+            'items.*.id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|min:1',
+            'items.*.note' => 'nullable',
         ];
     }
 }
