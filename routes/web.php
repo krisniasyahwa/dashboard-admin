@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\StockController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ProductController;
@@ -30,6 +31,7 @@ Route::group(['middleware' => ['auth:sanctum', 'verified']], function () {
         Route::middleware(['admin'])->group(function () {
             Route::resource('product', ProductController::class);
             Route::resource('category', ProductCategoryController::class);
+            Route::resource('stock', StockController::class);
             Route::resource('merchant', MerchantController::class);
             Route::resource('product.gallery', ProductGalleryController::class)->shallow()->only([
                 'index', 'create', 'store', 'destroy'
