@@ -356,7 +356,8 @@ class TransactionController extends Controller
     {
         try {
             $user = Auth::user();
-            $transactions = Transaction::with('merchant')->with('items.product')->where('users_id', $user->id)->orderBy('created_at', 'desc')->get();
+            $service = new TransactionService;
+            $transactions = $service->history($user->id);
 
             if ($transactions->isEmpty()) {
                 return ResponseFormatter::error(null, 'Transaction Not Found', 404);
