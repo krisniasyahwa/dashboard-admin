@@ -11,6 +11,7 @@ use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\MyTransactionController;
 use App\Http\Controllers\ProductGalleryController;
 use App\Http\Controllers\ProductCategoryController;
+use Illuminate\Support\Facades\Request;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,7 +32,12 @@ Route::group(['middleware' => ['auth:sanctum', 'verified']], function () {
         Route::middleware(['admin'])->group(function () {
             Route::resource('product', ProductController::class);
             Route::resource('category', ProductCategoryController::class);
-            Route::resource('stock', StockController::class);
+            Route::name('stock.')->prefix('stock')->group(function () {
+                Route::get('/{data?}', [StockController::class, 'index'])->name('index');
+                Route::patch('/rollback/{id}', [StockController::class, 'rollbackById'])->name('rollback');
+                Route::put('/rollback/all', [StockController::class, 'rollbackall'])->name('rollback.all');
+            });
+
             Route::resource('merchant', MerchantController::class);
             Route::resource('product.gallery', ProductGalleryController::class)->shallow()->only([
                 'index', 'create', 'store', 'destroy'
