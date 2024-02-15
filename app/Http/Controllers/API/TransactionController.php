@@ -6,17 +6,20 @@ use App\Helpers\ResponseFormatter;
 use App\Http\Controllers\Controller;
 use App\Models\Transaction;
 use App\Models\TransactionItem;
-use App\Models\User;
 use App\Models\Product;
 use App\Models\Merchant;
 use App\Traits\FilterByDate;
-use App\Http\Requests\ImageStoreRequest;
+use App\Services\ProductService;
+use App\Services\TransactionService;
+use App\Http\Requests\API\ValidationRequest;
+use App\Http\Requests\API\TransactionRequest;
 use Exception;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\validation\Validator;
 use Illuminate\Support\Facades\Storage;
+use PhpParser\Node\Stmt\ElseIf_;
 use Symfony\Component\HttpFoundation\Test\Constraint\ResponseFormatSame;
 use Throwable;
 
@@ -29,97 +32,89 @@ class TransactionController extends Controller
      * @return \Illuminate\Http\JsonResponse
      */
 
-     /* Method Helper*/
     /* Helper For Validation*/
-    public function validationHelper(Request $request){
-        $items = $request->items;
-        $idItems = array_column($items, 'id');
-        $idFirstItem = $items[0]['id'];
-        $merchantId = Product::where('id', $idFirstItem)->pluck('merchants_id');
-        $merchantData = Merchant::where('id', $merchantId)->get();
-        $products = Product::with(['featured_image','galleries', 'category', 'merchant'])->whereIn('id', $idItems)->get();
-        $transaction = $request->transaction_type;
-
-
-        //Organize Product Data
-        $productData = $products->map(function ($product, $index) use ($items) {
-            $quantity = $items[$index]['quantity'];
-            $note = $items[$index]['note'] ?? ''; // Use the note from the request
-            return [
-                'id' => $product->id,
-                'name' => $product->name,
-                'description' => $product->description,
-                'tags' => $product->tags,
-                'quantity' => $quantity,
-                'price' => $product->price,
-                'promo_price' => $product->promo_price,
-                'takeaway_charge' => $product->takeway_charge,
-                'note' => $note,
-                'merchant' => $product->merchant,
-                'category' => $product->category,
-                'galleries' => $product->galleries,
-                // 'featured_image' => $product->featured_image,
-            ];
-        });
-
-        //Organize Transaction Summary Data
-        if ($transaction === 'DINE_IN') {
-            $subtotal = 0;
-            
-            foreach ($productData as $product) {
-                // Handle condition if promo price is null, 0 or less than price
-                $productPrice = ($product['promo_price'] > 0 && $product['promo_price'] <= $product['price'] ) ? $product['promo_price'] : $product['price'];
-
-                $quantity = $product['quantity'];
-                $price = $productPrice;
-                $calculation = $quantity * $price;
-                $subtotal += $calculation;
-            }
-
-            $summaryData = [
-                'subtotal' => $subtotal,
-                'takeaway_price' => 0,
-                'admin_fee' => 0,
-                'total' => $subtotal
-            ];
+    public function validationHelper($requestValidated)
+    {
+        $itemsData = $requestValidated['items'];
+        $itemsId = array_column($itemsData, 'id');
+        $service = new ProductService;
+        $stocks = $service->stockValidation($itemsData);
+        if ($stocks === false) {
+            $result = $stocks;
+            return $result;
         } else {
-            $subtotal = 0;
-            $total_takeaway_charge = 0;
-            foreach ($productData as $product) {
-                // Handle condition if promo price is null, 0 or less than price
-                $productPrice = ($product['promo_price'] > 0 && $product['promo_price'] <= $product['price'] ) ? $product['promo_price'] : $product['price'];
+            $itemFirstId = $itemsData[0]['id'];
+            $merchantId = Product::where('id', $itemFirstId)->pluck('merchants_id')->first();
+            $merchantData = Merchant::where('id', $merchantId)->first();
+            $products = Product::with(['galleries', 'category', 'merchant'])->whereIn('id', $itemsId)->get();
+            $transactionType = $requestValidated['transaction_type'];
+            $productData = $products->map(function ($product, $index) use ($itemsData) {
+                $quantity = $itemsData[$index]['quantity'];
+                $note = $itemsData[$index]['note'] ?? '';
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'description' => $product->description,
+                    'tags' => $product->tags,
+                    'quantity' => $quantity,
+                    'price' => $product->price,
+                    'promo_price' => $product->promo_price,
+                    'takeaway_charge' => $product->takeway_charge,
+                    'note' => $note,
+                    'merchant' => $product->merchant,
+                    'category' => $product->category,
+                    'galleries' => $product->galleries
+                ];
+            });
 
-                $quantity = $product['quantity'];
-                $price = $productPrice;
-                $takeaway_charge = $product['takeaway_charge'];
-                $calculation = $quantity * $price;
-                $takeaway = $quantity * $takeaway_charge;
-                $subtotal += $calculation;
-                $total_takeaway_charge += $takeaway; 
+            if ($transactionType === 'DINE_IN') {
+                $subtotal = 0;
+                foreach ($productData as $product) {
+                    $productPrice = ($product['promo_price'] > 0 && $product['promo_price'] <= $product['price']) ? $product['promo_price'] : $product['price'];
+                    $quantity = $product['quantity'];
+                    $price = $productPrice;
+                    $calculation = $quantity * $price;
+                    $subtotal += $calculation;
+                }
+                $summaryData = [
+                    'subtotal' => $subtotal,
+                    'takeaway_price' => 0,
+                    'admin_fee' => 0,
+                    'total' => $subtotal
+                ];
+            } else {
+                $subtotal = 0;
+                $total_takeaway_charge = 0;
+                foreach ($productData as $product) {
+                    $productPrice = ($product['promo_price'] > 0 && $product['promo_price'] <= $product['price']) ? $product['promo_price'] : $product['price'];
+
+                    $quantity = $product['quantity'];
+                    $price = $productPrice;
+                    $takeaway_charge = $product['takeaway_charge'];
+                    $calculation = $quantity * $price;
+                    $takeaway = $quantity * $takeaway_charge;
+                    $subtotal += $calculation;
+                    $total_takeaway_charge += $takeaway;
+                }
+                $summaryData = [
+                    'subtotal' => $subtotal,
+                    'takeaway_charge' => $total_takeaway_charge,
+                    'admin_fee' => 0,
+                    'total' => $subtotal + $total_takeaway_charge
+                ];
             }
-            $summaryData = [
-                'subtotal' => $subtotal,
-                'takeaway_charge' => $total_takeaway_charge,
-                'admin_fee' => 0,
-                'total' => $subtotal + $total_takeaway_charge
-            ];
         }
-
         $result = [
-            'merchant' => $merchantData[0],
+            'merchant' => $merchantData,
             'items' => $productData,
             'Summary' => $summaryData,
         ];
         return $result;
     }
 
-    /* Helper For Detail Transaction */
-    public function getDetailTransactionById($id){
-        return Transaction::with('items.product.merchant')->where('id', $id)->first();
-    }
-    
     /* Method For GET Histories Transactions */
-    public function resultHistories($transaction){
+    public function resultHistories($transaction)
+    {
         $merchant = $transaction->items->first()->product->merchant;
         $sumQuantity = $transaction->items->sum('quantity');
         return [
@@ -145,21 +140,21 @@ class TransactionController extends Controller
             } elseif ($paidTransactions->isNotEmpty()) {
                 if ($unpaidTransactions->isNotEmpty()) {
                     $transactions = $unpaidTransactions->concat($paidTransactions);
-                    foreach($transactions as $transaction){
+                    foreach ($transactions as $transaction) {
                         $result[] = $this->resultHistories($transaction);
-                      }
+                    }
                     return ResponseFormatter::success($result, 'Success');
                 } else {
                     $transactions = $paidTransactions;
-                    foreach($transactions as $transaction){
+                    foreach ($transactions as $transaction) {
                         $result[] = $this->resultHistories($transaction);
                     }
                     return ResponseFormatter::success($result, 'Success');
                 }
             } else {
-                $transactions = $unpaidTransactions;              
-                foreach($transactions as $transaction){
-                  $result[] = $this->resultHistories($transaction);
+                $transactions = $unpaidTransactions;
+                foreach ($transactions as $transaction) {
+                    $result[] = $this->resultHistories($transaction);
                 }
                 return ResponseFormatter::success($result, 'success');
             }
@@ -168,23 +163,21 @@ class TransactionController extends Controller
         }
     }
 
+
     //Function for handle API validation product after cart  
-    public function validation(Request $request)
+    public function validation(ValidationRequest $request)
     {
         try {
-            $request->validate([
-                'transaction_type' => 'required|in:DINE_IN,TAKEAWAY',
-                'items' => 'required|array',
-                'items.*.id' => 'required|exists:products,id',
-                'items.*.quantity' => 'required|min:1',
-                'items.*.note' => 'nullable'
-            ]);
-            $result = $this->validationHelper($request);
+            $requestValidated = $request->validated();
+            $result = $this->validationHelper($requestValidated);
+            if (!$result) {
+                return ResponseFormatter::error($result, 'Stock Product Not Available', 404);
+            }
             return ResponseFormatter::success($result, 'Transactions Validated');
         } catch (Exception $error) {
             return ResponseFormatter::error([
                 'message' => 'Something Happened',
-                'error' => $error,
+                'error' => $error->getMessage(),
                 'code' => 500,
             ]);
         }
@@ -198,7 +191,7 @@ class TransactionController extends Controller
             'payment_image' => 'required|image|mimes:jpeg,jpg,png,svg'
         ]);
 
-        try{
+        try {
             $user = Auth::user();
             $paymentImage = $request->file('payment_image');
             $transaction = Transaction::where('users_id', $user->id)->where('id', $id)->first();
@@ -209,7 +202,7 @@ class TransactionController extends Controller
                 return ResponseFormatter::error(null, 'payment_image Not Found', 400);
             }
 
-            if ($transaction && $transaction->status === 'EXPIRED'){
+            if ($transaction && $transaction->status === 'EXPIRED') {
                 return ResponseFormatter::error(null, 'Transaction Expired', 400);
             }
 
@@ -238,7 +231,6 @@ class TransactionController extends Controller
                 'code' => 500,
             ]);
         }
-        
     }
 
     //Function for handle API confirmation transaction before payment
@@ -270,9 +262,11 @@ class TransactionController extends Controller
         }
     }
 
-    public function detailTransaction($idTransaction){
-        try{
-            $transaction= $this->getDetailTransactionById($idTransaction);
+    public function detailTransaction($id)
+    {
+        try {
+            $service = new TransactionService;
+            $transaction = $service->detailTransaction($id);
             $expiredTime = $transaction->created_at->addMinutes(15);
 
             $summary = [
@@ -296,19 +290,20 @@ class TransactionController extends Controller
                 'summary' => $summary
             ];
             return ResponseFormatter::success($result, "History Transaction untuk Id {$transaction->id} berhasil ditemukan");
-        }catch(Exception $error){
+        } catch (Exception $error) {
             return ResponseFormatter::error([
-                            'message' => 'Semething Happened',
-                            'error' => $error,
-                            'code' => 500
-                        ]);
+                'message' => 'Semething Happened',
+                'error' => $error,
+                'code' => 500
+            ]);
         }
     }
 
-    public function history($idTransaction){
-        // $id = $request->route('id');
-        try{
-            $transaction = $this->getDetailTransactionById($idTransaction);
+    public function history($id)
+    {
+        try {
+            $service = new TransactionService;
+            $transaction = $service->detailTransaction($id);
             $summary = [
                 'id_transaction' => $transaction->id,
                 'time' => $transaction->created_at->format('H:i:s'),
@@ -327,8 +322,7 @@ class TransactionController extends Controller
 
             ];
             return ResponseFormatter::success($result, "History Transaction untuk Id {$transaction->id} berhasil ditemukan");
-
-        }catch(Exception $error){
+        } catch (Exception $error) {
             return ResponseFormatter::error([
                 'message' => 'Semething Happened',
                 'error' => $error,
@@ -338,18 +332,19 @@ class TransactionController extends Controller
     }
 
 
-    public function pass($idTransaction){
-        try{
-            $transaction = $this->getDetailTransactionById($idTransaction);
+    public function pass($id)
+    {
+        try {
+            $service = new TransactionService;
+            $transaction = $service->detailTransaction($id);
             return ResponseFormatter::success($transaction, 'Success');
-        }catch(Exception $error){
+        } catch (Exception $error) {
             return ResponseFormatter::error([
                 'message' => 'Something Happened',
                 'error' => $error->getMessage(),
                 'code' => 500
             ]);
         }
-        
     }
 
     /**
@@ -361,9 +356,10 @@ class TransactionController extends Controller
     {
         try {
             $user = Auth::user();
-            $transactions = Transaction::with('merchant')->with('items.product')->where('users_id', $user->id)->orderBy('created_at', 'desc')->get();
+            $service = new TransactionService;
+            $transactions = $service->history($user->id);
 
-            if($transactions->isEmpty()){
+            if ($transactions->isEmpty()) {
                 return ResponseFormatter::error(null, 'Transaction Not Found', 404);
             }
 
@@ -412,75 +408,87 @@ class TransactionController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-     public function store(Request $request)
-     {
-         $user = Auth::user();
-         $request->validate([
-             'transaction_type' => 'required|in:DINE_IN,TAKEAWAY',
-             'payment_type' => 'required|in:BAYAR_SEKARANG,BAYAR_DITEMPAT',
-             'payment' => 'required|in:QRIS,CASH',
-             'items' => 'required|array',
-             'items.*.id' => 'required|exists:products,id',
-             'items.*.quantity' => 'required|min:1',
-             'items.*.note' => 'nullable',
-         ]);
- 
-         try {  
-             $transactionValidated = $this->validationHelper($request);
-           
-             switch ($request->transaction_type) {
-                 case 'TAKEAWAY':
-                     $transaction = Transaction::create([
-                         'merchants_id' => $transactionValidated['merchant']['id'],
-                         'users_id' => $user->id,
-                         'transaction_type' => $request->transaction_type,
-                         'takeaway_charge' => $transactionValidated['Summary']['takeaway_charge'],
-                         'total_price' => $transactionValidated['Summary']['total'],
-                         'status' => 'PENDING',
-                         'payment' => $request->payment,
-                         'payment_type' => $request->payment_type
-                     ]);
- 
-                     foreach($request->items as $item){
-                         TransactionItem::create([
-                             'users_id' => $user->id,
-                             'products_id' => $item['id'],
-                             'quantity' => $item['quantity'],
-                             'transactions_id' => $transaction->id,
-                             'note' => $item['note']
-                         ]);
-                     }
-                     return ResponseFormatter::success($transaction->load('items.product'), 'Checkout Berhasil');
-                     break;
-                 case 'DINE_IN':
-                     $transaction = Transaction::create([
-                         'merchants_id' => $transactionValidated['merchant']['id'], 
-                         'users_id' => $user->id,
-                         'transaction_type' => $request->transaction_type,
-                         'takeaway_charge' => 0,
-                         'total_price' => $transactionValidated['Summary']['total'],
-                         'status' => 'PENDING',
-                         'payment' => $request->payment,
-                         'payment_type' => $request->payment_type
-                     ]);
-                     foreach($request->items as $item){
-                         TransactionItem::create([
-                             'users_id' => $user->id,
-                             'products_id' => $item['id'],
-                             'quantity' => $item['quantity'],
-                             'transactions_id' => $transaction->id,
-                             'note' => $item['note']
-                         ]);
-                     }
-                     return ResponseFormatter::success($transaction->load('items.product'), 'Checkout Berhasil');
-                     break;
-                 default:
-                     return ResponseFormatter::error(null, 'Transaction Type Not Found', 400);
-                     break;
-             }
-         } catch (\Throwable $th) {
-             return ResponseFormatter::error($th, 'Something Happen', 500);
-         }
-     }
+    public function store(TransactionRequest $request, ProductService $productService)
+    {
+        $user = Auth::user();
+        $requestValidated = $request->validated(); 
 
+        try {
+            $transactionValidated = $this->validationHelper($requestValidated);
+            $transactionType = $requestValidated['transaction_type'];
+            $paymentType = $requestValidated['payment_type'];
+            $payment = $requestValidated['payment'];
+            if (!$transactionValidated) {
+                return ResponseFormatter::error($transactionValidated, 'Stock Product Not Available', 404);
+            }
+            switch ($transactionType) {
+                case 'TAKEAWAY':
+                    $transaction = Transaction::create([
+                        'merchants_id' => $transactionValidated['merchant']['id'],
+                        'users_id' => $user->id,
+                        'transaction_type' => $transactionType,
+                        'takeaway_charge' => $transactionValidated['Summary']['takeaway_charge'],
+                        'total_price' => $transactionValidated['Summary']['total'],
+                        'status' => 'PENDING',
+                        'payment' => $payment,
+                        'payment_type' => $paymentType
+                    ]);
+
+                    $productService->stockDecrement($request->items);
+
+                    foreach ($request->items as $item) {
+                        TransactionItem::create([
+                            'users_id' => $user->id,
+                            'products_id' => $item['id'],
+                            'quantity' => $item['quantity'],
+                            'transactions_id' => $transaction->id,
+                            'note' => $item['note']
+                        ]);
+                    }
+                    return ResponseFormatter::success($transaction->load('items.product'), 'Checkout Berhasil');
+                    break;
+                case 'DINE_IN':
+                    $transaction = Transaction::create([
+                        'merchants_id' => $transactionValidated['merchant']['id'],
+                        'users_id' => $user->id,
+                        'transaction_type' => $transactionType,
+                        'takeaway_charge' => 0,
+                        'total_price' => $transactionValidated['Summary']['total'],
+                        'status' => 'PENDING',
+                        'payment' => $payment,
+                        'payment_type' => $paymentType
+                    ]);
+                    $productService->stockDecrement($request->items);
+                    foreach ($request->items as $item) {
+                        TransactionItem::create([
+                            'users_id' => $user->id,
+                            'products_id' => $item['id'],
+                            'quantity' => $item['quantity'],
+                            'transactions_id' => $transaction->id,
+                            'note' => $item['note']
+                        ]);
+                    }
+                    return ResponseFormatter::success($transaction->load('items.product'), 'Checkout Berhasil');
+                    break;
+                default:
+                    return ResponseFormatter::error(null, 'Transaction Type Not Found', 400);
+                    break;
+            }
+            return ResponseFormatter::success($transactionType, "Success");
+        } catch (\Throwable $th) {
+            return ResponseFormatter::error($th, 'Something Happen', 500);
+        }
+    }
+
+    /**
+     * *BETA Method For listing expired transactions
+     */
+    // public function test(Request $request){
+    //     $user = Auth::user();
+    //     $id = $request->input('id');
+    //     $transaction = Transaction::with('items.product.merchant')->where('users_id', $user->id)->where('status','EXPIRED')->get();
+    //     $items = $transaction[0]['items'];
+    //     $result = $this->stockIncrement($items);
+    //     return ResponseFormatter::success($result, 'Success');
+    // }
 }
