@@ -27,6 +27,8 @@ class ProductController extends Controller
      *     
      * )
      */
+
+
     public function all(Request $request)
     {
         $id = $request->input('id');

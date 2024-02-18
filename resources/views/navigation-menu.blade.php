@@ -15,25 +15,29 @@
                     <x-jet-nav-link href="{{ route('dashboard.index') }}" :active="request()->routeIs('dashboard.index')">
                         {{ __('Dashboard') }}
                     </x-jet-nav-link>
-                    
+
                     @if(Auth::user()->roles == 'ADMIN')
-                        <x-jet-nav-link href="{{ route('dashboard.product.index') }}" :active="request()->routeIs('dashboard.product.index')">
+                        <x-jet-nav-link href="{{ route('dashboard.product.index') }}" :active="request()->routeIs('dashboard.product.*')">
                             {{ __('Products') }}
                         </x-jet-nav-link>
-                        
-                        <x-jet-nav-link href="{{ route('dashboard.category.index') }}" :active="request()->routeIs('dashboard.category.index')">
+
+                        <x-jet-nav-link href="{{ route('dashboard.category.index') }}" :active="request()->routeIs('dashboard.category.*')">
                             {{ __('Category') }}
                         </x-jet-nav-link>
 
-                        <x-jet-nav-link href="{{ route('dashboard.transaction.index') }}" :active="request()->routeIs('dashboard.transaction.index')">
+                        <x-jet-nav-link href="{{ route('dashboard.stock.index') }}" :active="request()->routeIs('dashboard.stock.*')">
+                            {{ __('Stock') }}
+                        </x-jet-nav-link>
+
+                        <x-jet-nav-link href="{{ route('dashboard.transaction.index') }}" :active="request()->routeIs('dashboard.transaction.*')">
                             {{ __('Transaction') }}
                         </x-jet-nav-link>
 
-                        <x-jet-nav-link href="{{ route('dashboard.merchant.index') }}" :active="request()->routeIs('dashboard.merchant.index')">
+                        <x-jet-nav-link href="{{ route('dashboard.merchant.index') }}" :active="request()->routeIs('dashboard.merchant.*')">
                             {{ __('Merchant') }}
                         </x-jet-nav-link>
 
-                        <x-jet-nav-link href="{{ route('dashboard.user.index') }}" :active="request()->routeIs('dashboard.user.index')">
+                        <x-jet-nav-link href="{{ route('dashboard.user.index') }}" :active="request()->routeIs('dashboard.user.*')">
                             {{ __('User') }}
                         </x-jet-nav-link>
                     @endif
