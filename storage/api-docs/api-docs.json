@@ -1,0 +1,136 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Dokumentasi API",
+        "description": "Dokumentasi API menggunakan Swagger Packages",
+        "contact": {
+            "email": "mzhssn313@gmail.com"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8000/api/",
+            "description": "Demo API Server"
+        }
+    ],
+    "paths": {
+        "/products": {
+            "get": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Get All Products",
+                "operationId": "products",
+                "parameters": [
+                    {
+                        "name": "name",
+                        "in": "query",
+                        "description": "Show Data By Name",
+                        "schema": {
+                            "type": "String"
+                        }
+                    },
+                    {
+                        "name": "description",
+                        "in": "query",
+                        "description": "Show Data By Keyword description",
+                        "schema": {
+                            "type": "String"
+                        }
+                    },
+                    {
+                        "name": "categories",
+                        "in": "query",
+                        "description": "Show Data By Categories Id",
+                        "schema": {
+                            "type": "String"
+                        }
+                    },
+                    {
+                        "name": "merchants",
+                        "in": "query",
+                        "description": "Show Data By Merchants Id",
+                        "schema": {
+                            "type": "String"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Filter Limitation Products",
+                        "schema": {
+                            "type": "String"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success"
+                    }
+                }
+            }
+        },
+        "/categories": {
+            "get": {
+                "tags": [
+                    "Products By Category"
+                ],
+                "summary": "Get Product By Categories",
+                "operationId": "categoriesproduct",
+                "responses": {
+                    "200": {
+                        "description": "Success Get Data"
+                    }
+                }
+            }
+        },
+        "/products/random": {
+            "get": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Get Random Products",
+                "operationId": "randoms",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "set limitation random product",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "categories",
+                        "in": "query",
+                        "description": "set random product by categories",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "merchants",
+                        "in": "query",
+                        "description": "set random products by merchants",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success Get Data Random Products"
+                    }
+                }
+            }
+        }
+    }
+}
