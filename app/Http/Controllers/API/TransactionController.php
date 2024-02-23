@@ -160,7 +160,7 @@ class TransactionController extends Controller
                 $expired = $transaction->created_at->addMinutes(15);
 
                 if ($now->greaterThan($expired)) {
-                    $transaction->status = 'EXPIRED';
+                    $transaction->status_payment = 'EXPIRED';
                     $transaction->save();
                     return ResponseFormatter::error(null, 'Transaction Expired', 400);
                 } else {
