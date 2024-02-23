@@ -112,58 +112,6 @@ class TransactionController extends Controller
         return $result;
     }
 
-    /* Method For GET Histories Transactions */
-    public function resultHistories($transaction)
-    {
-        $merchant = $transaction->items->first()->product->merchant;
-        $sumQuantity = $transaction->items->sum('quantity');
-        return [
-            'id' => $transaction->id,
-            'status' => $transaction->status,
-            'status_payment' => $transaction->status_payment,
-            'merchant' => $merchant,
-            'sum_quantity' => $sumQuantity,
-            'items' => $transaction->items,
-            'total_price' => $transaction->total_price
-        ];
-    }
-
-    public function histories(Request $request)
-    {
-        $user = Auth::user();
-        try {
-            $unpaidTransactions = Transaction::with('items.product.merchant')->where('users_id', $user->id)->where('status_payment', 'UNPAID')->orderBy('created_at', 'desc')->get();
-            $paidTransactions = Transaction::with('items.product.merchant')->where('users_id', $user->id)->where('status_payment', 'PAID')->orderBy('created_at', 'desc')->get();
-
-            if ($unpaidTransactions->isEmpty() && $paidTransactions->isEmpty()) {
-                return ResponseFormatter::error(null, 'Transactions Not Found', 400);
-            } elseif ($paidTransactions->isNotEmpty()) {
-                if ($unpaidTransactions->isNotEmpty()) {
-                    $transactions = $unpaidTransactions->concat($paidTransactions);
-                    foreach ($transactions as $transaction) {
-                        $result[] = $this->resultHistories($transaction);
-                    }
-                    return ResponseFormatter::success($result, 'Success');
-                } else {
-                    $transactions = $paidTransactions;
-                    foreach ($transactions as $transaction) {
-                        $result[] = $this->resultHistories($transaction);
-                    }
-                    return ResponseFormatter::success($result, 'Success');
-                }
-            } else {
-                $transactions = $unpaidTransactions;
-                foreach ($transactions as $transaction) {
-                    $result[] = $this->resultHistories($transaction);
-                }
-                return ResponseFormatter::success($result, 'success');
-            }
-        } catch (\Throwable $th) {
-            return ResponseFormatter::error($th, 'Something Happen', 500);
-        }
-    }
-
-
     //Function for handle API validation product after cart  
     public function validation(ValidationRequest $request)
     {
@@ -261,92 +209,6 @@ class TransactionController extends Controller
             ]);
         }
     }
-
-    public function detailTransaction($id)
-    {
-        try {
-            $service = new TransactionService;
-            $transaction = $service->detailTransaction($id);
-            $expiredTime = $transaction->created_at->addMinutes(15);
-
-            $summary = [
-                'id_transaction' => $transaction->id,
-                'time' => $transaction->created_at->format('H:i:s'),
-                'date' => $transaction->created_at->format('Y-m-d'),
-                'method' => $transaction->payment,
-                'admin_fee' => 0,
-                'subtotal' => $transaction->total_price - $transaction->takeaway_charge,
-                'takeaway_charge' => $transaction->takeaway_charge,
-                'total_price' => $transaction->total_price,
-
-            ];
-
-            //Response Output
-            $result = [
-                'expired_time' => $expiredTime,
-                'status' => $transaction->status,
-                'merchant' => $transaction->items[0]->product->merchant,
-                'items' => $transaction->items,
-                'summary' => $summary
-            ];
-            return ResponseFormatter::success($result, "History Transaction untuk Id {$transaction->id} berhasil ditemukan");
-        } catch (Exception $error) {
-            return ResponseFormatter::error([
-                'message' => 'Semething Happened',
-                'error' => $error,
-                'code' => 500
-            ]);
-        }
-    }
-
-    public function history($id)
-    {
-        try {
-            $service = new TransactionService;
-            $transaction = $service->detailTransaction($id);
-            $summary = [
-                'id_transaction' => $transaction->id,
-                'time' => $transaction->created_at->format('H:i:s'),
-                'date' => $transaction->created_at->format('Y-m-d'),
-                'payment' => $transaction->payment,
-                'status_payment' => $transaction->status_payment,
-                'subtotal' => $transaction->total_price - $transaction->takeaway_charge,
-                'takeaway_charge' => $transaction->takeaway_charge,
-                'total_price' => $transaction->total_price,
-
-            ];
-            $result = [
-                'transaction_type' => $transaction->transaction_type,
-                'items' => $transaction->items,
-                'Summary' => $summary
-
-            ];
-            return ResponseFormatter::success($result, "History Transaction untuk Id {$transaction->id} berhasil ditemukan");
-        } catch (Exception $error) {
-            return ResponseFormatter::error([
-                'message' => 'Semething Happened',
-                'error' => $error,
-                'code' => 500
-            ]);
-        }
-    }
-
-
-    public function pass($id)
-    {
-        try {
-            $service = new TransactionService;
-            $transaction = $service->detailTransaction($id);
-            return ResponseFormatter::success($transaction, 'Success');
-        } catch (Exception $error) {
-            return ResponseFormatter::error([
-                'message' => 'Something Happened',
-                'error' => $error->getMessage(),
-                'code' => 500
-            ]);
-        }
-    }
-
     /**
      * Display a listing of the transaction.
      * @return \Illuminate\Http\Response
@@ -387,7 +249,7 @@ class TransactionController extends Controller
                 $expired = $transaction->created_at->addMinutes(15);
 
                 if ($now->greaterThan($expired)) {
-                    $transaction->status = 'EXPIRED';
+                    $transaction->status_payment = 'EXPIRED';
                     $transaction->save();
                 }
 
@@ -480,6 +342,142 @@ class TransactionController extends Controller
         }
     }
 
+     /* Method For GET Histories Transactions */
+     public function resultHistories($transaction)
+     {
+         $merchant = $transaction->items->first()->product->merchant;
+         $sumQuantity = $transaction->items->sum('quantity');
+         return [
+             'id' => $transaction->id,
+             'status' => $transaction->status,
+             'status_payment' => $transaction->status_payment,
+             'merchant' => $merchant,
+             'sum_quantity' => $sumQuantity,
+             'items' => $transaction->items,
+             'total_price' => $transaction->total_price
+         ];
+     }
+ 
+     public function histories(Request $request)
+     {
+         $user = Auth::user();
+         try {
+             $unpaidTransactions = Transaction::with('items.product.merchant')->where('users_id', $user->id)->where('status_payment', 'UNPAID')->orderBy('created_at', 'desc')->get();
+             $paidTransactions = Transaction::with('items.product.merchant')->where('users_id', $user->id)->where('status_payment', 'PAID')->orderBy('created_at', 'desc')->get();
+ 
+             if ($unpaidTransactions->isEmpty() && $paidTransactions->isEmpty()) {
+                 return ResponseFormatter::error(null, 'Transactions Not Found', 400);
+             } elseif ($paidTransactions->isNotEmpty()) {
+                 if ($unpaidTransactions->isNotEmpty()) {
+                     $transactions = $unpaidTransactions->concat($paidTransactions);
+                     foreach ($transactions as $transaction) {
+                         $result[] = $this->resultHistories($transaction);
+                     }
+                     return ResponseFormatter::success($result, 'Success');
+                 } else {
+                     $transactions = $paidTransactions;
+                     foreach ($transactions as $transaction) {
+                         $result[] = $this->resultHistories($transaction);
+                     }
+                     return ResponseFormatter::success($result, 'Success');
+                 }
+             } else {
+                 $transactions = $unpaidTransactions;
+                 foreach ($transactions as $transaction) {
+                     $result[] = $this->resultHistories($transaction);
+                 }
+                 return ResponseFormatter::success($result, 'success');
+             }
+         } catch (\Throwable $th) {
+             return ResponseFormatter::error($th, 'Something Happen', 500);
+         }
+     }
+
+
+    public function detailTransaction($id)
+    {
+        try {
+            $service = new TransactionService;
+            $transaction = $service->detailTransaction($id);
+            $expiredTime = $transaction->created_at->addMinutes(15);
+
+            $summary = [
+                'id_transaction' => $transaction->id,
+                'time' => $transaction->created_at->format('H:i:s'),
+                'date' => $transaction->created_at->format('Y-m-d'),
+                'method' => $transaction->payment,
+                'admin_fee' => 0,
+                'subtotal' => $transaction->total_price - $transaction->takeaway_charge,
+                'takeaway_charge' => $transaction->takeaway_charge,
+                'total_price' => $transaction->total_price,
+
+            ];
+
+            //Response Output
+            $result = [
+                'expired_time' => $expiredTime,
+                'status' => $transaction->status,
+                'merchant' => $transaction->items[0]->product->merchant,
+                'items' => $transaction->items,
+                'summary' => $summary
+            ];
+            return ResponseFormatter::success($result, "History Transaction untuk Id {$transaction->id} berhasil ditemukan");
+        } catch (Exception $error) {
+            return ResponseFormatter::error([
+                'message' => 'Semething Happened',
+                'error' => $error,
+                'code' => 500
+            ]);
+        }
+    }
+
+    public function history($id)
+    {
+        try {
+            $service = new TransactionService;
+            $transaction = $service->detailTransaction($id);
+            $summary = [
+                'id_transaction' => $transaction->id,
+                'time' => $transaction->created_at->format('H:i:s'),
+                'date' => $transaction->created_at->format('Y-m-d'),
+                'payment' => $transaction->payment,
+                'status_payment' => $transaction->status_payment,
+                'subtotal' => $transaction->total_price - $transaction->takeaway_charge,
+                'takeaway_charge' => $transaction->takeaway_charge,
+                'total_price' => $transaction->total_price,
+
+            ];
+            $result = [
+                'transaction_type' => $transaction->transaction_type,
+                'items' => $transaction->items,
+                'Summary' => $summary
+
+            ];
+            return ResponseFormatter::success($result, "History Transaction untuk Id {$transaction->id} berhasil ditemukan");
+        } catch (Exception $error) {
+            return ResponseFormatter::error([
+                'message' => 'Semething Happened',
+                'error' => $error,
+                'code' => 500
+            ]);
+        }
+    }
+
+
+    public function pass($id)
+    {
+        try {
+            $service = new TransactionService;
+            $transaction = $service->detailTransaction($id);
+            return ResponseFormatter::success($transaction, 'Success');
+        } catch (Exception $error) {
+            return ResponseFormatter::error([
+                'message' => 'Something Happened',
+                'error' => $error->getMessage(),
+                'code' => 500
+            ]);
+        }
+    }
     /**
      * *BETA Method For listing expired transactions
      */
